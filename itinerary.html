@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Itinerary | HiddenTrails.AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    .glass-sidebar {
+      background: #f8fafc;
+      border-right: 1px solid #e2e8f0;
+    }
+
+    .glass-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      overflow: hidden;
+      transition: all 0.4s ease;
+    }
+    .glass-card:hover {
+      background: #f1f5f9;
+      border-color: rgba(16, 185, 129, 0.3);
+      transform: translateY(-4px);
+    }
+
+    .hero-overlay {
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.1));
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+  </style>
+</head>
+
+<body class="font-sans text-gray-800">
+
+<nav class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+  <div class="flex items-center gap-2">
+    <i class="fa-solid fa-compass text-green-400 text-2xl"></i>
+    <h1 class="text-xl font-black text-gray-800 tracking-tight">HiddenTrails.AI</h1>
+  </div>
+  <div class="flex items-center space-x-8 font-medium text-gray-600">
+    <a href="dashboard.html" class="hover:text-green-400 transition">Home</a>
+    <a href="saved.html" class="hover:text-green-400 transition">Saved</a>
+    <a href="#" id="logoutBtn" class="bg-red-500/20 text-red-400 px-5 py-2 rounded-xl border border-red-500/50 hover:bg-red-600 hover:text-white transition">Logout</a>
+  </div>
+</nav>
+
+<div class="flex min-h-[calc(100vh-72px)]">
+
+  <aside class="w-72 glass-sidebar p-8 space-y-3">
+    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Main Menu</p>
+    <a href="dashboard.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-house"></i> Dashboard
+    </a>
+    <a href="plantrips.html" class="flex items-center gap-3 p-4 bg-green-500/20 text-green-400 rounded-2xl font-bold border border-green-500/30">
+      <i class="fa-solid fa-map-location-dot"></i> Plan Trip
+    </a>
+    <a href="saved.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-bookmark"></i> Saved Trips
+    </a>
+    <a href="rewards.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-gift"></i> Rewards
+    </a>
+    <a href="photo-challenge.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-camera"></i> Photo Challenge
+    </a>
+  </aside>
+
+  <main class="flex-1 p-12 overflow-y-auto">
+    <div class="max-w-4xl mx-auto space-y-8">
+
+      <!-- Hero Section -->
+      <div id="heroSection" class="relative h-80 rounded-3xl overflow-hidden glass-card">
+        <img id="heroImage" class="w-full h-full object-cover" alt="Destination">
+        <div class="absolute inset-0 hero-overlay flex flex-col justify-end p-10">
+          <h1 id="tripTitle" class="text-4xl font-black mb-2"></h1>
+          <p id="budgetInfo" class="text-gray-300 font-medium"></p>
+        </div>
+      </div>
+
+      <div id="hiddenScore" class="text-center text-green-400 font-bold text-lg"></div>
+
+      <!-- Days Container -->
+      <div id="daysContainer" class="space-y-8">
+        <div class="text-center p-20">
+          <i class="fa-solid fa-spinner fa-spin text-4xl text-green-400 mb-4"></i>
+          <p class="text-gray-400">Loading your itinerary...</p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex justify-center gap-4 mt-8">
+        <button id="regenBtn"
+          class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 shadow-lg shadow-amber-900/30">
+          <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Regenerate AI
+        </button>
+
+        <a href="saved.html"
+           class="bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-700 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105">
+          <i class="fa-solid fa-bookmark mr-2"></i> Saved Trips
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCtSKfk3j-RaExSaumaeGoQlJQckBDZ32c",
+  authDomain: "hiddentrails-ai.firebaseapp.com",
+  projectId: "hiddentrails-ai",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Auth guard
+onAuthStateChanged(auth, (user) => {
+  if (!user) window.location.href = "auth.html";
+});
+
+// Logout
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  signOut(auth).then(() => window.location.href = "auth.html");
+});
+
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+const heroImage = document.getElementById("heroImage");
+const tripTitle = document.getElementById("tripTitle");
+const budgetInfo = document.getElementById("budgetInfo");
+const daysContainer = document.getElementById("daysContainer");
+const regenBtn = document.getElementById("regenBtn");
+
+let trip;
+
+async function loadTrip() {
+  try {
+    if (!id) {
+      daysContainer.innerHTML = `<p class="text-center text-red-400 p-10">No trip ID provided.</p>`;
+      return;
+    }
+
+    const docRef = doc(db, "trips", id);
+    const snap = await getDoc(docRef);
+
+    if (!snap.exists()) {
+      daysContainer.innerHTML = `<p class="text-center text-red-400 p-10">Trip not found.</p>`;
+      return;
+    }
+
+    trip = snap.data();
+
+    // Hidden score
+    if (trip.hidden_score) {
+      document.getElementById("hiddenScore").innerText =
+        `Hidden Score: ${trip.hidden_score}/10 🔥`;
+    }
+
+    // Hero image
+    heroImage.src = await getDestinationImage(trip.destination);
+
+    const style = trip.trip_style ?? trip.preference ?? "Custom";
+    tripTitle.innerText = `${trip.destination} – ${trip.days.length} Day ${style} Trip`;
+    budgetInfo.innerText = `Budget: ₹${trip.budget} | Estimated: ₹${trip.total_estimated_cost}`;
+
+    daysContainer.innerHTML = "";
+    let imagesUpdated = false;
+
+    for (const day of trip.days) {
+      const card = document.createElement("div");
+      card.className = "glass-card p-8";
+
+      let imageUrl = null; // Always re-fetch images using latest logic (ignore cached)
+      {
+        // Smart landmark extraction from the day's activities
+        const dayText = `${day.morning || ''} ${day.afternoon || ''} ${day.evening || ''}`;
+        
+        // PASS 1: Look for landmark-specific patterns (visit, explore — NOT restaurants/cafes)
+        const landmarkPatterns = [
+          // Match: "visit the iconic Rumi Darwaza" or "explore Bada Imambara"
+          /(?:visit|explore|head to|go to|reach|arrive at|check out|see|tour)\s+(?:the\s+)?(?:iconic|famous|renowned|historic|popular|beautiful|ancient|magnificent|stunning\s+)?([A-Z][A-Za-z\s'-]+(?:Darwaza|Imambara|Imambada|Beach|Fort|Palace|Temple|Church|Museum|Market|Lake|Falls|Waterfall|Point|Park|Garden|Gate|Mahal|Mosque|Masjid|Bridge|Island|Cave|Tower|Bay|Dam|Hill|Mountain|Square|Bazaar|Mandir|Gurudwara|Dargah|Memorial|Zoo|Sanctuary|Reserve|Valley|Harbour|Harbor|Basilica|Cathedral|Monastery|Ruins|Tomb|Stupa|Canyon|Gorge|Forest|Plateau|Lighthouse|Station|Complex|Ashram|Chowk|Residency|Ghat|Stepwell|Haveli|Kothi|Bhawan|Bhavan|Maqbara|Bagh|Kund|Nagar|Sagar|Kila|Qila|Jheel|Minar|Burj|Pol|Sabha|Baoli|Tekri))/i,
+          // Fallback: "visit XYZ" followed by punctuation
+          /(?:visit|explore|head to)\s+(?:the\s+)?(?:iconic|famous|historic\s+)?([A-Z][A-Za-z\s'-]{3,30}(?=[.,!;]))/i,
+        ];
+        
+        let searchQuery = null;
+        
+        for (const pattern of landmarkPatterns) {
+          const match = dayText.match(pattern);
+          if (match && match[1]) {
+            const placeName = match[1].trim().replace(/\s+/g, ' ');
+            // Skip restaurant/cafe names
+            if (!/cafe|restaurant|hotel|dhaba|eatery|bistro|bar|lounge|factory/i.test(placeName)) {
+              searchQuery = `${placeName} ${trip.destination}`;
+              break;
+            }
+          }
+        }
+        
+        // PASS 2: Look for capitalized proper noun phrases (2+ words starting with caps)
+        if (!searchQuery) {
+          const properNouns = dayText.match(/[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+/g);
+          if (properNouns) {
+            for (const noun of properNouns) {
+              if (!/Cafe|Restaurant|Hotel|Dhaba|Factory|Start|Then|Try|Have|Enjoy|Take|Visit|Head|Entry|Egg|Morning|Afternoon|Evening/i.test(noun)) {
+                searchQuery = `${noun} ${trip.destination}`;
+                break;
+              }
+            }
+          }
+        }
+        
+        // PASS 3: Fallback to day title (but skip generic words)
+        if (!searchQuery) {
+          const safeTitle = (day.title || `Day ${day.day}`).replace(/Arrival|Beach|Vibes|&/gi, '').trim();
+          searchQuery = `${trip.destination} ${safeTitle || 'landmark'}`;
+        }
+        
+        imageUrl = await getDestinationImage(searchQuery);
+        day.image = imageUrl;
+        imagesUpdated = true;
+      }
+
+      // Extract a location name for Google Maps from the day's data
+      const dayText = `${day.morning || ''} ${day.afternoon || ''}`;
+      let mapQuery = day.title ? `${day.title}, ${trip.destination}` : trip.destination;
+      // Try to extract a specific landmark name
+      const landmarkMatch = dayText.match(/(?:visit|explore|head to|go to|reach|arrive at)\s+(?:the\s+)?(?:iconic|famous|historic\s+)?([A-Z][A-Za-z\s'-]{3,30})/i);
+      if (landmarkMatch && landmarkMatch[1]) {
+        mapQuery = `${landmarkMatch[1].trim()}, ${trip.destination}`;
+      }
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}`;
+
+      card.innerHTML = `
+        <h2 class="text-2xl font-black mb-4 text-gray-800">
+          <span class="text-green-500">Day ${day.day}:</span> ${day.title}
+        </h2>
+
+        <img src="${imageUrl}" class="rounded-2xl mb-6 w-full h-72 object-cover border border-gray-200">
+
+        <div class="space-y-5 text-gray-600 leading-relaxed">
+          <div class="flex gap-4">
+            <div class="w-1 bg-amber-500 rounded-full flex-shrink-0"></div>
+            <div>
+              <span class="text-[10px] uppercase tracking-widest text-amber-400 font-bold">Morning</span>
+              <p class="mt-1">${day.morning}</p>
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <div class="w-1 bg-blue-500 rounded-full flex-shrink-0"></div>
+            <div>
+              <span class="text-[10px] uppercase tracking-widest text-blue-400 font-bold">Afternoon</span>
+              <p class="mt-1">${day.afternoon}</p>
+            </div>
+          </div>
+
+          <div class="flex gap-4">
+            <div class="w-1 bg-purple-500 rounded-full flex-shrink-0"></div>
+            <div>
+              <span class="text-[10px] uppercase tracking-widest text-purple-400 font-bold">Evening</span>
+              <p class="mt-1">
+                ${day.evening && day.evening !== "N/A"
+                  ? day.evening
+                  : "Wrap up the day with a relaxed local dinner nearby."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
+          <span class="text-green-500 font-black text-lg">₹${day.estimated_cost}</span>
+          <div class="flex items-center gap-3">
+            <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Estimated Cost</span>
+            <a href="${mapsUrl}" target="_blank" rel="noopener"
+               class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition shadow-sm">
+              <i class="fa-solid fa-location-dot"></i> Open in Maps
+            </a>
+          </div>
+        </div>
+      `;
+
+      daysContainer.appendChild(card);
+    }
+
+    if (imagesUpdated) {
+      await updateDoc(doc(db, "trips", id), { days: trip.days });
+    }
+
+  } catch (err) {
+    console.error("LoadTrip Error:", err);
+    daysContainer.innerHTML = `<p class="text-center text-red-400 p-10">Something went wrong loading this trip.</p>`;
+  }
+}
+
+async function getDestinationImage(query) {
+  try {
+    const res = await fetch(
+      `http://localhost:5000/get-destination-image?query=${encodeURIComponent(query)}`
+    );
+    if (!res.ok) throw new Error("Image API failed");
+    const data = await res.json();
+    return data.image;
+  } catch (err) {
+    console.error("Image fetch failed:", err);
+    return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80";
+  }
+}
+
+loadTrip();
+
+// Regenerate Button
+regenBtn.addEventListener("click", async () => {
+  if (!confirm("Regenerate itinerary? This will replace the current one.")) return;
+
+  regenBtn.disabled = true;
+  regenBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Regenerating...`;
+
+  try {
+    const res = await fetch("http://localhost:5000/generate-itinerary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destination: trip.destination,
+        days: trip.days.length,
+        preference: trip.preference || trip.trip_style || "Adventure",
+        budget: trip.budget
+      })
+    });
+
+    const newData = await res.json();
+
+    if (!newData.days || !Array.isArray(newData.days)) {
+      alert("AI regeneration failed. Try again!");
+      return;
+    }
+
+    await updateDoc(doc(db, "trips", id), {
+      total_estimated_cost: newData.total_estimated_cost,
+      days: newData.days,
+      regeneratedAt: new Date()
+    });
+
+    alert("Itinerary regenerated! 🔄");
+    location.reload();
+  } catch (err) {
+    console.error("Regenerate error:", err);
+    alert("Failed to regenerate. Check if backend is running.");
+  } finally {
+    regenBtn.disabled = false;
+    regenBtn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Regenerate AI`;
+  }
+});
+</script>
+
+</body>
+</html>

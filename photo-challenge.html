@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Photo Challenge 📸 | HiddenTrails.AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: #ffffff;
+        min-height: 100vh;
+      }
+      .glass-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .glass-card:hover {
+        background: #f1f5f9;
+        border-color: rgba(245, 158, 11, 0.4);
+        transform: translateY(-6px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+      }
+      .glass-sidebar {
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+      }
+      .challenge-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        transition: all 0.35s ease;
+        cursor: pointer;
+        overflow: hidden;
+      }
+      .challenge-card:hover {
+        border-color: rgba(245, 158, 11, 0.5);
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 12px 30px rgba(245, 158, 11, 0.1);
+      }
+      .challenge-card img {
+        transition: transform 0.5s ease;
+      }
+      .challenge-card:hover img {
+        transform: scale(1.08);
+      }
+      .challenge-card.completed {
+        border-color: rgba(16, 185, 129, 0.5);
+        opacity: 0.7;
+      }
+      .challenge-card.completed::after {
+        content: "✅ COMPLETED";
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(16, 185, 129, 0.9);
+        color: white;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 4px 10px;
+        border-radius: 8px;
+        letter-spacing: 1px;
+      }
+
+      /* Camera modal */
+      .camera-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+      }
+      .camera-modal.active {
+        display: flex;
+      }
+
+      .camera-panel {
+        background: rgba(30, 41, 59, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 28px;
+        padding: 32px;
+        width: 90%;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      video,
+      .captured-preview {
+        border-radius: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.15);
+      }
+
+      /* Pulse animation for capture btn */
+      @keyframes pulse-ring {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1.4);
+          opacity: 0;
+        }
+      }
+      .capture-btn::before {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        border: 3px solid #f59e0b;
+        animation: pulse-ring 1.5s infinite;
+      }
+
+      /* Result modal */
+      .result-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        align-items: center;
+        justify-content: center;
+      }
+      .result-modal.active {
+        display: flex;
+      }
+
+      @keyframes bounceIn {
+        0% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        70% {
+          transform: scale(0.95);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .result-content {
+        animation: bounceIn 0.6s ease-out;
+      }
+
+      @keyframes confetti {
+        0% {
+          transform: translateY(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-200px) rotate(720deg);
+          opacity: 0;
+        }
+      }
+      .confetti-particle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        animation: confetti 1.5s ease-out forwards;
+      }
+
+      /* Loading spinner */
+      @keyframes spin-glow {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .loader {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(245, 158, 11, 0.2);
+        border-top-color: #f59e0b;
+        border-radius: 50%;
+        animation: spin-glow 0.8s linear infinite;
+      }
+    </style>
+  </head>
+
+  <body class="font-sans text-gray-800">
+    <!-- NAV -->
+    <nav
+      class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm"
+    >
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-compass text-green-400 text-2xl"></i>
+        <h1 class="text-xl font-black text-gray-800 tracking-tight">
+          HiddenTrails.AI
+        </h1>
+      </div>
+      <div class="flex items-center space-x-8 font-medium text-gray-600">
+        <a href="index.html" class="hover:text-green-400 transition">Home</a>
+        <a href="dashboard.html" class="hover:text-green-400 transition"
+          >Dashboard</a
+        >
+        <a href="saved.html" class="hover:text-green-400 transition">Saved</a>
+        <a
+          href="auth.html"
+          class="bg-red-500/20 text-red-400 px-5 py-2 rounded-xl border border-red-500/50 hover:bg-red-600 transition"
+          >Logout</a
+        >
+      </div>
+    </nav>
+
+    <div class="flex min-h-[calc(100vh-72px)]">
+      <!-- SIDEBAR -->
+      <aside class="w-72 glass-sidebar p-8 space-y-3">
+        <p
+          class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6"
+        >
+          Main Menu
+        </p>
+        <a
+          href="dashboard.html"
+          class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition"
+        >
+          <i class="fa-solid fa-house"></i> Dashboard
+        </a>
+        <a
+          href="plantrips.html"
+          class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition"
+        >
+          <i class="fa-solid fa-map-location-dot"></i> Plan Trip
+        </a>
+        <a
+          href="saved.html"
+          class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition"
+        >
+          <i class="fa-solid fa-bookmark"></i> Saved Trips
+        </a>
+        <a
+          href="rewards.html"
+          class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition"
+        >
+          <i class="fa-solid fa-gift"></i> Rewards
+        </a>
+        <a
+          href="photo-challenge.html"
+          class="flex items-center gap-3 p-4 bg-amber-500/20 text-amber-400 rounded-2xl font-bold border border-amber-500/30"
+        >
+          <i class="fa-solid fa-camera-retro"></i> Photo Challenge
+        </a>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="flex-1 p-12 overflow-y-auto">
+        <div class="max-w-6xl mx-auto">
+          <!-- HEADER -->
+          <header class="mb-10">
+            <h2
+              class="text-3xl font-black tracking-tight flex items-center gap-3 text-gray-800"
+            >
+              <span class="bg-amber-500/20 p-3 rounded-2xl"
+                ><i class="fa-solid fa-camera-retro text-amber-400 text-3xl"></i
+              ></span>
+              Photo Challenges
+            </h2>
+            <p class="text-gray-400 mt-3 max-w-2xl">
+              Visit famous landmarks, take a
+              <strong class="text-amber-400">real-time photo</strong> matching
+              the reference, and earn reward points! Points can be redeemed as
+              coupons.
+            </p>
+          </header>
+
+          <!-- STATS BAR -->
+          <div
+            class="glass-card p-6 mb-10 flex flex-wrap items-center justify-between gap-4"
+          >
+            <div class="flex items-center gap-4">
+              <div
+                class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center"
+              >
+                <i class="fa-solid fa-trophy text-amber-400 text-2xl"></i>
+              </div>
+              <div>
+                <p
+                  class="text-xs text-gray-400 uppercase tracking-widest font-bold"
+                >
+                  Your Points
+                </p>
+                <p id="totalPoints" class="text-3xl font-black text-amber-400">
+                  0
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div
+                class="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center"
+              >
+                <i class="fa-solid fa-circle-check text-green-400 text-2xl"></i>
+              </div>
+              <div>
+                <p
+                  class="text-xs text-gray-400 uppercase tracking-widest font-bold"
+                >
+                  Completed
+                </p>
+                <p
+                  id="completedCount"
+                  class="text-3xl font-black text-green-400"
+                >
+                  0/6
+                </p>
+              </div>
+            </div>
+            <a
+              href="rewards.html"
+              class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold px-6 py-3 rounded-xl transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg"
+            >
+              <i class="fa-solid fa-ticket"></i> View Coupons
+            </a>
+          </div>
+
+          <!-- CHALLENGE CARDS GRID -->
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            id="challengeGrid"
+          >
+            <!-- Cards populated by JS -->
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- CAMERA MODAL -->
+    <div class="camera-modal" id="cameraModal">
+      <div class="camera-panel">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-2xl font-black flex items-center gap-2">
+            <i class="fa-solid fa-crosshairs text-amber-400"></i>
+            <span id="modalTitle">Challenge</span>
+          </h3>
+          <button
+            onclick="closeCamera()"
+            class="text-gray-400 hover:text-white text-2xl transition"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Reference Image -->
+          <div>
+            <p
+              class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3"
+            >
+              <i class="fa-solid fa-image"></i> Reference Photo
+            </p>
+            <img
+              id="referenceImg"
+              src=""
+              alt="Reference"
+              class="w-full aspect-[4/3] object-cover rounded-2xl border-2 border-white/10"
+            />
+            <p class="text-xs text-gray-500 mt-2 text-center italic">
+              Take a photo that looks like this ☝️
+            </p>
+          </div>
+
+          <!-- Webcam / Captured -->
+          <div>
+            <p
+              class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3"
+            >
+              <i class="fa-solid fa-video"></i> Your Camera
+            </p>
+            <div class="relative">
+              <video
+                id="webcamVideo"
+                autoplay
+                playsinline
+                muted
+                class="w-full aspect-[4/3] object-cover rounded-2xl bg-slate-800"
+              ></video>
+              <img
+                id="capturedImg"
+                src=""
+                alt="Captured"
+                class="captured-preview w-full aspect-[4/3] object-cover rounded-2xl bg-slate-800 hidden"
+              />
+              <!-- Live indicator -->
+              <div
+                id="liveIndicator"
+                class="absolute top-3 left-3 flex items-center gap-2 bg-red-600/90 px-3 py-1 rounded-full text-xs font-bold"
+              >
+                <span
+                  class="w-2 h-2 bg-white rounded-full animate-pulse"
+                ></span>
+                LIVE
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden file input for gallery -->
+        <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="handleGalleryUpload(event)" />
+
+        <!-- Action buttons -->
+        <div
+          class="flex items-center justify-center gap-6 mt-8"
+          id="cameraActions"
+        >
+          <button
+            onclick="document.getElementById('galleryInput').click()"
+            class="relative w-14 h-14 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl transition-all transform hover:scale-110 border border-white/20"
+            title="Upload from Gallery"
+          >
+            <i class="fa-solid fa-images"></i>
+          </button>
+          <button
+            onclick="capturePhoto()"
+            id="captureBtn"
+            class="capture-btn relative w-16 h-16 bg-amber-500 hover:bg-amber-400 rounded-full flex items-center justify-center text-white text-2xl transition-all transform hover:scale-110 shadow-lg shadow-amber-500/30"
+          >
+            <i class="fa-solid fa-camera"></i>
+          </button>
+        </div>
+        <p class="text-center text-gray-500 text-[11px] mt-2">📷 Capture live · 🖼️ or upload from gallery</p>
+
+        <div class="hidden flex-col items-center gap-4 mt-8" id="submitActions">
+          <div class="flex gap-4">
+            <button
+              onclick="retakePhoto()"
+              class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold transition flex items-center gap-2"
+            >
+              <i class="fa-solid fa-rotate-left"></i> Retake
+            </button>
+            <button
+              onclick="submitPhoto()"
+              class="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
+            >
+              <i class="fa-solid fa-paper-plane"></i> Verify Photo
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div class="hidden flex-col items-center gap-4 mt-8" id="loadingState">
+          <div class="loader"></div>
+          <p class="text-gray-400 text-sm animate-pulse">
+            AI is analyzing your photo...
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT MODAL -->
+    <div class="result-modal" id="resultModal">
+      <div
+        class="result-content text-center p-10 rounded-3xl max-w-md mx-4 relative"
+        id="resultContent"
+      >
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <canvas id="captureCanvas" class="hidden"></canvas>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+      import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCtSKfk3j-RaExSaumaeGoQlJQckBDZ32c",
+        authDomain: "hiddentrails-ai.firebaseapp.com",
+        projectId: "hiddentrails-ai",
+      };
+
+      const fbApp = initializeApp(firebaseConfig);
+      const auth = getAuth(fbApp);
+
+      let currentUserId = null;
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUserId = user.uid;
+          // Once we have the user, load their dynamic challenges
+          await loadDynamicChallenges(user.uid);
+        }
+      });
+
+      // ========== DEFAULT CHALLENGES (shown if no itinerary-based ones exist) ==========
+      // All image URLs verified via browser to show the correct landmark
+      const defaultChallenges = [
+        {
+          id: "tajmahal",
+          name: "Taj Mahal",
+          location: "Agra, UP",
+          points: 150,
+          difficulty: "Easy",
+          image: "https://images.unsplash.com/photo-1564507592333-c60657eea523?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+          description: "Capture the iconic white marble mausoleum",
+        },
+        {
+          id: "indiagate",
+          name: "India Gate",
+          location: "New Delhi",
+          points: 100,
+          difficulty: "Easy",
+          image: "https://images.unsplash.com/photo-1587474260584-136574528ed5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+          description: "Snap the war memorial arch from the front",
+        },
+        {
+          id: "gateway",
+          name: "Gateway of India",
+          location: "Mumbai, MH",
+          points: 120,
+          difficulty: "Medium",
+          image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+          description: "Photograph the grand harbor-front arch",
+        },
+        {
+          id: "hawamahal",
+          name: "Hawa Mahal",
+          location: "Jaipur, RJ",
+          points: 130,
+          difficulty: "Medium",
+          image: "https://images.unsplash.com/photo-1650530777057-3a7dbc24bf6c?q=80&w=800&auto=format&fit=crop",
+          description: "Capture the Palace of Winds facade",
+        },
+        {
+          id: "mysorepalace",
+          name: "Mysore Palace",
+          location: "Mysore, KA",
+          points: 140,
+          difficulty: "Hard",
+          image: "https://images.unsplash.com/photo-1657856855186-7cf4909a4f78?q=80&w=800&auto=format&fit=crop",
+          description: "Photograph the illuminated royal palace",
+        },
+        {
+          id: "goldentemple",
+          name: "Golden Temple",
+          location: "Amritsar, PB",
+          points: 150,
+          difficulty: "Hard",
+          image: "https://images.unsplash.com/photo-1514222134-b57cbb8ce073?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+          description: "Capture the sacred golden shrine reflection",
+        },
+      ];
+
+      const FALLBACK_IMG = "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=400&fit=crop";
+
+      // Active challenges — will be replaced by dynamic ones if available
+      let challenges = [...defaultChallenges];
+
+      // ========== DYNAMIC CHALLENGE LOADER (FAST — parallel fetch) ==========
+      async function loadDynamicChallenges(userId) {
+        try {
+          const res = await fetch(`http://localhost:5000/photo-challenges/${userId}`);
+          if (!res.ok) throw new Error("Failed to fetch");
+          const data = await res.json();
+
+          if (data.challenges && data.challenges.length > 0) {
+            // Step 1: Build challenge objects immediately (with placeholder image)
+            const dynamicChallenges = data.challenges.map(ch => ({
+              id: ch.id,
+              name: ch.name,
+              location: ch.destination || "India",
+              points: ch.points || 100,
+              difficulty: ch.difficulty || "Medium",
+              image: ch.image || FALLBACK_IMG,      // placeholder for now
+              description: ch.description || `Photograph ${ch.name}`,
+              _needsImage: !ch.image,                // flag: needs real image
+              _query: ch.name + ' ' + (ch.destination || ''),
+            }));
+
+            // Step 2: Render cards INSTANTLY (with placeholder images)
+            challenges = [...dynamicChallenges, ...defaultChallenges];
+            renderChallenges();
+            console.log(`📸 Loaded ${dynamicChallenges.length} dynamic challenges — fetching images in parallel...`);
+
+            // Step 3: Fetch ALL images in PARALLEL (not one-by-one)
+            const needImages = dynamicChallenges.filter(ch => ch._needsImage);
+            if (needImages.length > 0) {
+              const imagePromises = needImages.map(ch =>
+                fetch(`http://localhost:5000/get-destination-image?query=${encodeURIComponent(ch._query)}`)
+                  .then(r => r.ok ? r.json() : { image: null })
+                  .then(d => ({ id: ch.id, image: d.image }))
+                  .catch(() => ({ id: ch.id, image: null }))
+              );
+
+              const results = await Promise.all(imagePromises);
+
+              // Step 4: Update challenge images and re-render
+              for (const r of results) {
+                if (r.image) {
+                  const ch = challenges.find(c => c.id === r.id);
+                  if (ch) ch.image = r.image;
+                }
+              }
+              renderChallenges();
+              console.log(`🖼️ All ${results.length} images loaded in parallel!`);
+            }
+            return; // already rendered
+          }
+        } catch (err) {
+          console.warn("⚠️ Could not load dynamic challenges, using defaults:", err.message);
+        }
+        // Render with defaults if no dynamic challenges
+        renderChallenges();
+      }
+
+      // ========== STATE ==========
+      let currentChallenge = null;
+      let webcamStream = null;
+      let capturedBase64 = null;
+      let userGPS = { latitude: null, longitude: null }; // GPS coordinates
+
+      // ========== LOCAL STORAGE ==========
+      function getCompleted() {
+        return JSON.parse(
+          localStorage.getItem("ht_completed_challenges") || "[]",
+        );
+      }
+      function getPoints() {
+        return parseInt(localStorage.getItem("ht_reward_points") || "0");
+      }
+      function setPoints(pts) {
+        localStorage.setItem("ht_reward_points", String(pts));
+      }
+      function addCompleted(id) {
+        const list = getCompleted();
+        if (!list.includes(id)) {
+          list.push(id);
+          localStorage.setItem("ht_completed_challenges", JSON.stringify(list));
+        }
+      }
+
+      // ========== GPS — GET USER LOCATION ==========
+      function getUserLocation() {
+        return new Promise((resolve) => {
+          if (!navigator.geolocation) {
+            console.warn("⚠️ Geolocation not supported");
+            resolve({ latitude: null, longitude: null });
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              resolve({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+              });
+            },
+            (err) => {
+              console.warn("⚠️ GPS error:", err.message);
+              resolve({ latitude: null, longitude: null });
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+          );
+        });
+      }
+
+      // ========== RENDER CARDS ==========
+      function renderChallenges() {
+        const grid = document.getElementById("challengeGrid");
+        const completed = getCompleted();
+        grid.innerHTML = "";
+
+        challenges.forEach((ch) => {
+          const isDone = completed.includes(ch.id);
+          const diffColor =
+            ch.difficulty === "Easy"
+              ? "green"
+              : ch.difficulty === "Medium"
+                ? "amber"
+                : "red";
+
+          grid.innerHTML += `
+        <div class="challenge-card relative ${isDone ? "completed" : ""}" onclick="${isDone ? "" : `openChallenge('${ch.id}')`}">
+          <div class="h-48 overflow-hidden">
+            <img src="${ch.image}" alt="${ch.name}" class="w-full h-full object-cover" loading="lazy" />
+          </div>
+          <div class="p-5">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-lg font-bold">${ch.name}</h4>
+              <span class="text-xs font-bold px-2 py-1 rounded-lg bg-${diffColor}-500/20 text-${diffColor}-400">${ch.difficulty}</span>
+            </div>
+            <p class="text-gray-400 text-xs flex items-center gap-1 mb-2">
+              <i class="fa-solid fa-location-dot"></i> ${ch.location}
+            </p>
+            <p class="text-gray-500 text-xs mb-4">${ch.description}</p>
+            <div class="flex items-center justify-between">
+              <span class="text-amber-400 font-black text-lg">+${ch.points} pts</span>
+              ${
+                isDone
+                  ? '<span class="text-green-400 text-xs font-bold"><i class="fa-solid fa-circle-check"></i> Done</span>'
+                  : '<button class="text-xs bg-amber-500/20 text-amber-400 px-4 py-2 rounded-lg font-bold hover:bg-amber-500 hover:text-white transition">Start <i class="fa-solid fa-arrow-right"></i></button>'
+              }
+            </div>
+          </div>
+        </div>
+      `;
+        });
+
+        // Update stats
+        document.getElementById("totalPoints").textContent = getPoints();
+        document.getElementById("completedCount").textContent =
+          `${completed.length}/${challenges.length}`;
+      }
+
+      // ========== CAMERA ==========
+      window.openChallenge = async function (id) {
+        currentChallenge = challenges.find((c) => c.id === id);
+        if (!currentChallenge) return;
+
+        // Get GPS location when opening a challenge
+        userGPS = await getUserLocation();
+        console.log("📍 GPS:", userGPS);
+
+        document.getElementById("modalTitle").textContent =
+          currentChallenge.name;
+        document.getElementById("referenceImg").src = currentChallenge.image;
+        document.getElementById("cameraModal").classList.add("active");
+
+        // Reset states
+        document.getElementById("capturedImg").classList.add("hidden");
+        document.getElementById("webcamVideo").classList.remove("hidden");
+        document.getElementById("liveIndicator").classList.remove("hidden");
+        document.getElementById("cameraActions").classList.remove("hidden");
+        document.getElementById("cameraActions").style.display = "flex";
+        document.getElementById("submitActions").classList.add("hidden");
+        document.getElementById("submitActions").style.display = "none";
+        document.getElementById("loadingState").classList.add("hidden");
+        document.getElementById("loadingState").style.display = "none";
+        capturedBase64 = null;
+
+        try {
+          webcamStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 960 },
+            },
+            audio: false,
+          });
+          document.getElementById("webcamVideo").srcObject = webcamStream;
+        } catch (err) {
+          alert(
+            "⚠️ Camera access denied. Please allow camera permission to participate in challenges.",
+          );
+          window.closeCamera();
+        }
+      };
+
+      window.closeCamera = function () {
+        document.getElementById("cameraModal").classList.remove("active");
+        if (webcamStream) {
+          webcamStream.getTracks().forEach((t) => t.stop());
+          webcamStream = null;
+        }
+      };
+
+      window.capturePhoto = function () {
+        const video = document.getElementById("webcamVideo");
+        const canvas = document.getElementById("captureCanvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0);
+        capturedBase64 = canvas.toDataURL("image/jpeg", 0.85);
+
+        document.getElementById("capturedImg").src = capturedBase64;
+        document.getElementById("capturedImg").classList.remove("hidden");
+        document.getElementById("webcamVideo").classList.add("hidden");
+        document.getElementById("liveIndicator").classList.add("hidden");
+
+        document.getElementById("cameraActions").style.display = "none";
+        document.getElementById("submitActions").classList.remove("hidden");
+        document.getElementById("submitActions").style.display = "flex";
+      };
+
+      window.retakePhoto = function () {
+        capturedBase64 = null;
+        document.getElementById("capturedImg").classList.add("hidden");
+        document.getElementById("webcamVideo").classList.remove("hidden");
+        document.getElementById("liveIndicator").classList.remove("hidden");
+        document.getElementById("submitActions").style.display = "none";
+        document.getElementById("cameraActions").style.display = "flex";
+        // Reset file input so same file can be re-selected
+        document.getElementById("galleryInput").value = "";
+      };
+
+      // ========== GALLERY UPLOAD ==========
+      window.handleGalleryUpload = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          capturedBase64 = e.target.result;
+
+          // Show the uploaded image in the preview
+          document.getElementById("capturedImg").src = capturedBase64;
+          document.getElementById("capturedImg").classList.remove("hidden");
+          document.getElementById("webcamVideo").classList.add("hidden");
+          document.getElementById("liveIndicator").classList.add("hidden");
+
+          // Switch to submit actions
+          document.getElementById("cameraActions").style.display = "none";
+          document.getElementById("submitActions").classList.remove("hidden");
+          document.getElementById("submitActions").style.display = "flex";
+        };
+        reader.readAsDataURL(file);
+      };
+
+      // ========== SUBMIT & VERIFY ==========
+      window.submitPhoto = async function () {
+        if (!capturedBase64 || !currentChallenge) return;
+
+        // Show loading
+        document.getElementById("submitActions").style.display = "none";
+        document.getElementById("loadingState").classList.remove("hidden");
+        document.getElementById("loadingState").style.display = "flex";
+
+        try {
+          // Build payload with GPS data and userId for backend validation
+          const payload = {
+            userImageBase64: capturedBase64,
+            referenceImageUrl: currentChallenge.image,
+            challengeId: currentChallenge.id,
+            userId: currentUserId,
+            latitude: userGPS.latitude,
+            longitude: userGPS.longitude,
+            timestamp: new Date().toISOString(),
+            mockLocationFlag: false,
+          };
+
+          const res = await fetch("http://localhost:5000/verify-photo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await res.json();
+          window.closeCamera();
+          showResult(data);
+        } catch (err) {
+          document.getElementById("loadingState").style.display = "none";
+          document.getElementById("submitActions").style.display = "flex";
+          alert(
+            "⚠️ Backend not running! Start the server with: cd backend && node server.js",
+          );
+        }
+      };
+
+      // ========== RESULT DISPLAY ==========
+      function showResult(data) {
+        const modal = document.getElementById("resultModal");
+        const content = document.getElementById("resultContent");
+
+        // Build score display HTML
+        const scoreHTML = (data.landmarkMatchScore !== undefined && data.livenessScore !== undefined)
+          ? `<div class="flex justify-center gap-6 mb-4 mt-2">
+              <div class="text-center">
+                <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Match</p>
+                <p class="text-2xl font-black ${data.landmarkMatchScore >= 75 ? 'text-green-400' : 'text-red-400'}">${data.landmarkMatchScore}%</p>
+              </div>
+              <div class="text-center">
+                <p class="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Liveness</p>
+                <p class="text-2xl font-black ${data.livenessScore >= 70 ? 'text-green-400' : 'text-red-400'}">${data.livenessScore}%</p>
+              </div>
+            </div>`
+          : '';
+
+        if (data.match && data.liveness) {
+          // FULL SUCCESS
+          const pts = data.points || currentChallenge.points;
+          setPoints(getPoints() + pts);
+          addCompleted(currentChallenge.id);
+          saveCouponIfMilestone();
+
+          content.className =
+            "result-content text-center p-10 rounded-3xl max-w-md mx-4 relative bg-gradient-to-br from-emerald-900/90 to-slate-900/90 border border-emerald-500/30";
+          content.innerHTML = `
+        <div class="text-7xl mb-4">🎉</div>
+        <h3 class="text-3xl font-black text-emerald-400 mb-2">Challenge Complete!</h3>
+        <p class="text-gray-300 mb-4">${data.message || "Your photo matches the landmark perfectly!"}</p>
+        ${scoreHTML}
+        <div class="bg-emerald-500/20 border border-emerald-500/30 rounded-2xl p-6 mb-6">
+          <p class="text-xs text-emerald-300 uppercase tracking-widest font-bold mb-1">Points Earned</p>
+          <p class="text-5xl font-black text-emerald-400">+${pts}</p>
+        </div>
+        <button onclick="closeResult()" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition-all transform hover:scale-105">
+          Awesome! <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      `;
+        } else if (data.match && !data.liveness) {
+          // PARTIAL — matched but not live
+          const pts = data.points || 30;
+          setPoints(getPoints() + pts);
+
+          content.className =
+            "result-content text-center p-10 rounded-3xl max-w-md mx-4 relative bg-gradient-to-br from-amber-900/90 to-slate-900/90 border border-amber-500/30";
+          content.innerHTML = `
+        <div class="text-7xl mb-4">📸</div>
+        <h3 class="text-3xl font-black text-amber-400 mb-2">Partial Match</h3>
+        <p class="text-gray-300 mb-4">${data.message || "Photo matches but doesn't appear to be taken live. Visit the location for full points!"}</p>
+        ${scoreHTML}
+        <div class="bg-amber-500/20 border border-amber-500/30 rounded-2xl p-6 mb-6">
+          <p class="text-xs text-amber-300 uppercase tracking-widest font-bold mb-1">Partial Points</p>
+          <p class="text-5xl font-black text-amber-400">+${pts}</p>
+        </div>
+        <button onclick="closeResult()" class="bg-amber-500 hover:bg-amber-400 text-white font-bold px-8 py-3 rounded-xl transition-all transform hover:scale-105">
+          Got It <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+      `;
+        } else {
+          // NO MATCH
+          content.className =
+            "result-content text-center p-10 rounded-3xl max-w-md mx-4 relative bg-gradient-to-br from-red-900/90 to-slate-900/90 border border-red-500/30";
+          content.innerHTML = `
+        <div class="text-7xl mb-4">😕</div>
+        <h3 class="text-3xl font-black text-red-400 mb-2">No Match</h3>
+        <p class="text-gray-300 mb-4">${data.message || "Your photo doesn't match the landmark. Try again from a better angle!"}</p>
+        ${scoreHTML}
+        <button onclick="closeResult()" class="bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-3 rounded-xl transition-all transform hover:scale-105">
+          Try Again <i class="fa-solid fa-rotate-left ml-1"></i>
+        </button>
+      `;
+        }
+
+        modal.classList.add("active");
+        renderChallenges();
+      }
+
+      window.closeResult = function () {
+        document.getElementById("resultModal").classList.remove("active");
+      };
+
+      // ========== COUPON MILESTONES ==========
+      function saveCouponIfMilestone() {
+        const pts = getPoints();
+        const coupons = JSON.parse(localStorage.getItem("ht_coupons") || "[]");
+        const milestones = [
+          {
+            at: 100,
+            code: "TRAIL10",
+            discount: "10% OFF",
+            brand: "MakeMyTrip",
+            icon: "✈️",
+          },
+          {
+            at: 250,
+            code: "HIDDEN25",
+            discount: "25% OFF",
+            brand: "Goibibo Hotels",
+            icon: "🏨",
+          },
+          {
+            at: 400,
+            code: "EXPLORE40",
+            discount: "₹400 OFF",
+            brand: "IRCTC Tickets",
+            icon: "🚂",
+          },
+          {
+            at: 600,
+            code: "WANDER50",
+            discount: "50% OFF",
+            brand: "Zostel Stays",
+            icon: "🏕️",
+          },
+          {
+            at: 800,
+            code: "EPIC80",
+            discount: "₹800 OFF",
+            brand: "Cleartrip Flights",
+            icon: "🛫",
+          },
+        ];
+
+        milestones.forEach((m) => {
+          if (pts >= m.at && !coupons.find((c) => c.code === m.code)) {
+            coupons.push(m);
+            localStorage.setItem("ht_coupons", JSON.stringify(coupons));
+          }
+        });
+      }
+
+      // ========== INIT ==========
+      renderChallenges();
+    </script>
+  </body>
+</html>

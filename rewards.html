@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rewards & Badges | HiddenTrails.AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #ffffff;
+      min-height: 100vh;
+    }
+    .glass-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      transition: all 0.3s ease;
+    }
+    .points-text {
+      background: linear-gradient(to bottom, #1e293b, #10b981);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .badge-card:hover {
+      background: rgba(16, 185, 129, 0.05);
+      border-color: rgba(16, 185, 129, 0.4);
+      transform: translateY(-6px) scale(1.02);
+    }
+    .glass-sidebar {
+      background: #f8fafc;
+      border-right: 1px solid #e2e8f0;
+    }
+    .coupon-card {
+      background: #fffbeb;
+      border: 1px dashed rgba(245, 158, 11, 0.4);
+      border-radius: 20px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .coupon-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #f59e0b, #ef4444, #8b5cf6);
+    }
+    .coupon-card:hover {
+      background: rgba(245, 158, 11, 0.06);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.08);
+    }
+    .coupon-code {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px dashed rgba(245, 158, 11, 0.5);
+      font-family: monospace;
+      letter-spacing: 3px;
+    }
+    /* Coupon Store */
+    .store-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+    .store-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+    }
+    .store-card .brand-strip {
+      height: 6px;
+      width: 100%;
+    }
+    .store-card.unlockable {
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .store-card.unlockable:hover {
+      border-color: rgba(16, 185, 129, 0.7);
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
+    }
+    .store-card.locked {
+      opacity: 0.65;
+    }
+    .store-card.locked:hover {
+      opacity: 0.85;
+    }
+    .redeem-btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .redeem-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+    .redeem-btn:disabled {
+      background: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .progress-mini {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-mini-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.6s ease;
+    }
+    @keyframes redeemPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .redeem-success {
+      animation: redeemPop 0.4s ease;
+    }
+  </style>
+</head>
+
+<body class="font-sans text-gray-800">
+
+<nav class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+  <div class="flex items-center gap-2">
+    <i class="fa-solid fa-compass text-green-400 text-2xl"></i>
+    <h1 class="text-xl font-black text-gray-800 tracking-tight">HiddenTrails.AI</h1>
+  </div>
+  <div class="flex items-center space-x-8 font-medium text-gray-600">
+    <a href="dashboard.html" class="hover:text-green-400 transition">Home</a>
+    <a href="saved.html" class="hover:text-green-400 transition">Saved</a>
+    <a href="auth.html" class="bg-red-500/20 text-red-400 px-5 py-2 rounded-xl border border-red-500/50 hover:bg-red-600 transition">Logout</a>
+  </div>
+</nav>
+
+<div class="flex min-h-[calc(100vh-72px)]">
+
+  <aside class="w-72 glass-sidebar p-8 space-y-3">
+    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Main Menu</p>
+    <a href="dashboard.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-house"></i> Dashboard
+    </a>
+    <a href="plantrips.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-map-location-dot"></i> Plan Trip
+    </a>
+    <a href="saved.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-bookmark"></i> Saved Trips
+    </a>
+    <a href="rewards.html" class="flex items-center gap-3 p-4 bg-green-500/20 text-green-400 rounded-2xl font-bold border border-green-500/30">
+      <i class="fa-solid fa-gift"></i> Rewards
+    </a>
+    <a href="photo-challenge.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-camera-retro"></i> Photo Challenge
+    </a>
+  </aside>
+
+  <main class="flex-1 p-12 overflow-y-auto">
+    <div class="max-w-5xl mx-auto">
+      
+      <header class="mb-12">
+        <h2 class="text-3xl font-black tracking-tight text-gray-800">Rewards & Points 🏆</h2>
+        <p class="text-gray-500 mt-2 text-sm">Unlock exclusive perks by exploring the unexplored.</p>
+      </header>
+
+      <!-- POINTS OVERVIEW — DYNAMIC -->
+      <div class="glass-card p-10 mb-12 relative overflow-hidden">
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div>
+            <p class="text-green-400 font-bold uppercase tracking-widest text-sm mb-2">Available Balance</p>
+            <h3 id="pointsDisplay" class="text-7xl font-black points-text">0</h3>
+            <p id="statusMsg" class="text-gray-400 mt-4 max-w-sm text-sm"></p>
+          </div>
+          <div class="w-full md:w-1/2 space-y-4">
+            <div class="flex justify-between text-xs font-bold uppercase tracking-widest">
+              <span id="levelLabel">Level 1: Rookie</span>
+              <span id="progressLabel" class="text-green-400">0% to Level 2</span>
+            </div>
+            <div class="h-4 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div id="progressBar" class="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-700 shadow-lg shadow-green-500/40" style="width: 0%"></div>
+            </div>
+            <p class="text-[10px] text-gray-500 text-center italic">Tip: Complete Photo Challenges to boost points fast!</p>
+          </div>
+        </div>
+        <i class="fa-solid fa-coins absolute -right-10 -bottom-10 text-9xl text-white/5 rotate-12"></i>
+      </div>
+
+      <!-- ACTIVE CHALLENGES CTA -->
+      <div class="glass-card p-6 mb-10 flex items-center justify-between border border-amber-500/20 hover:border-amber-500/40 transition cursor-pointer" onclick="window.location.href='photo-challenge.html'">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center">
+            <i class="fa-solid fa-camera-retro text-amber-400 text-2xl"></i>
+          </div>
+          <div>
+            <h4 class="text-lg font-bold">Photo Challenges</h4>
+            <p class="text-gray-400 text-sm">Snap landmarks to earn points fast!</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="challengeBadge" class="bg-amber-500 text-white text-xs font-black px-3 py-1 rounded-full">6 Active</span>
+          <i class="fa-solid fa-arrow-right text-amber-400"></i>
+        </div>
+      </div>
+
+      <!-- COUPON STORE -->
+      <h4 class="text-xl font-bold mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-store text-amber-500"></i> Coupon Store
+      </h4>
+      <p class="text-gray-400 text-sm mb-6">Earn points from Photo Challenges & trips, then redeem them for real coupons!</p>
+      <div id="storeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- YOUR REDEEMED COUPONS -->
+      <h4 class="text-xl font-bold mb-6 flex items-center gap-2">
+        <i class="fa-solid fa-ticket text-green-500"></i> Your Redeemed Coupons
+      </h4>
+      <div id="couponGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
+        <!-- Populated by JS -->
+      </div>
+      <p id="noCoupons" class="hidden text-gray-500 text-center py-8 text-sm italic mb-12">
+        No coupons redeemed yet! Browse the store above and redeem your points.
+      </p>
+
+      <!-- BADGES -->
+      <h4 class="text-xl font-bold mb-6 flex items-center gap-2">
+        <i class="fa-solid fa-medal text-yellow-500"></i> Your Achievement Badges
+      </h4>
+      <div id="badgeGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Populated by JS -->
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCtSKfk3j-RaExSaumaeGoQlJQckBDZ32c",
+    authDomain: "hiddentrails-ai.firebaseapp.com",
+    projectId: "hiddentrails-ai",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // ========== DATA ==========
+  function getPoints() { return parseInt(localStorage.getItem('ht_reward_points') || '0'); }
+  function setPoints(p) { localStorage.setItem('ht_reward_points', String(p)); }
+  function getCompleted() { return JSON.parse(localStorage.getItem('ht_completed_challenges') || '[]'); }
+  function getCoupons() { return JSON.parse(localStorage.getItem('ht_coupons') || '[]'); }
+
+  const allCouponMilestones = [
+    { at: 100,  cost: 80,   code: 'TRAIL10',   discount: '10% OFF',   brand: 'MakeMyTrip',       icon: '✈️',  color: '#3b82f6',  desc: 'Domestic flight bookings' },
+    { at: 150,  cost: 120,  code: 'FOOD15',    discount: '15% OFF',   brand: 'Zomato',           icon: '🍔',  color: '#ef4444',  desc: 'Food delivery orders' },
+    { at: 250,  cost: 200,  code: 'HIDDEN25',  discount: '25% OFF',   brand: 'Goibibo Hotels',   icon: '🏨',  color: '#f59e0b',  desc: 'Hotel bookings nationwide' },
+    { at: 350,  cost: 280,  code: 'CAFE35',    discount: '₹350 OFF',  brand: 'Starbucks',        icon: '☕',  color: '#059669',  desc: 'Any beverage of your choice' },
+    { at: 400,  cost: 350,  code: 'EXPLORE40', discount: '₹400 OFF',  brand: 'IRCTC Tickets',    icon: '🚂',  color: '#6366f1',  desc: 'Train tickets across India' },
+    { at: 500,  cost: 420,  code: 'SHOP50',    discount: '₹500 OFF',  brand: 'Amazon',           icon: '📦',  color: '#f97316',  desc: 'Travel gear & accessories' },
+    { at: 600,  cost: 500,  code: 'WANDER50',  discount: '50% OFF',   brand: 'Zostel Stays',     icon: '🏕️',  color: '#8b5cf6',  desc: 'Hostel stays in any city' },
+    { at: 800,  cost: 700,  code: 'EPIC80',    discount: '₹800 OFF',  brand: 'Cleartrip Flights',icon: '🛫',  color: '#ec4899',  desc: 'International flight deals' },
+    { at: 1000, cost: 900,  code: 'LEGEND',    discount: '₹1500 OFF', brand: 'Booking.com',      icon: '🌍',  color: '#0ea5e9',  desc: 'Worldwide hotel bookings' },
+  ];
+
+  // ========== LEVEL SYSTEM (synced with backend constants) ==========
+  const levels = [
+    { name: 'Rookie', min: 0, max: 200 },
+    { name: 'Explorer', min: 200, max: 500 },
+    { name: 'Adventurer', min: 500, max: 1000 },
+    { name: 'Pro Traveler', min: 1000, max: 2000 },
+    { name: 'Legend', min: 2000, max: 9999 }
+  ];
+
+  function getLevel(pts) {
+    for (let i = levels.length - 1; i >= 0; i--) {
+      if (pts >= levels[i].min) return { level: i + 1, ...levels[i] };
+    }
+    return { level: 1, ...levels[0] };
+  }
+
+  // ========== SYNC WITH BACKEND ==========
+  async function syncWithBackend(userId) {
+    try {
+      const res = await fetch(`http://localhost:5000/rewards/${userId}`);
+      const data = await res.json();
+      if (data.points !== undefined) {
+        // Backend is source of truth — sync localStorage
+        const localPts = getPoints();
+        const serverPts = data.points;
+        // Use whichever is higher (in case local has unclaimed points)
+        const finalPts = Math.max(localPts, serverPts);
+        setPoints(finalPts);
+        // Sync completed challenges
+        if (data.completedChallenges && data.completedChallenges.length > 0) {
+          const local = getCompleted();
+          const merged = [...new Set([...local, ...data.completedChallenges])];
+          localStorage.setItem('ht_completed_challenges', JSON.stringify(merged));
+        }
+        console.log(`✅ Synced with backend: ${finalPts} pts`);
+      }
+    } catch (err) {
+      console.warn('⚠️ Backend not available, using localStorage:', err.message);
+    }
+  }
+
+  // ========== RENDER POINTS ==========
+  function renderPoints() {
+    const pts = getPoints();
+    const lvl = getLevel(pts);
+    const nextLvl = levels[lvl.level] || levels[levels.length - 1];
+    const progress = Math.min(100, ((pts - lvl.min) / (lvl.max - lvl.min)) * 100);
+
+    document.getElementById('pointsDisplay').textContent = pts;
+    document.getElementById('levelLabel').textContent = `Level ${lvl.level}: ${lvl.name}`;
+    document.getElementById('progressLabel').textContent = lvl.level >= levels.length ? 'MAX LEVEL!' : `${Math.round(progress)}% to Level ${lvl.level + 1}`;
+    document.getElementById('progressBar').style.width = progress + '%';
+
+    const remaining = lvl.max - pts;
+    document.getElementById('statusMsg').textContent = remaining > 0
+      ? `You are doing great! Earn ${remaining} more points to reach "${nextLvl.name}" status.`
+      : '🎉 You have reached the highest level! Keep exploring!';
+  }
+
+  // ========== RENDER COUPON STORE ==========
+  function renderCouponStore() {
+    const pts = getPoints();
+    const redeemed = getCoupons();
+    const grid = document.getElementById('storeGrid');
+    grid.innerHTML = '';
+
+    allCouponMilestones.forEach(m => {
+      const isRedeemed = redeemed.find(c => c.code === m.code);
+      const canAfford = pts >= m.cost;
+      const isUnlocked = pts >= m.at;
+      const progress = Math.min(100, (pts / m.at) * 100);
+
+      let statusHTML = '';
+      let cardClass = 'store-card';
+
+      if (isRedeemed) {
+        statusHTML = `<span class="text-green-500 text-xs font-bold"><i class="fa-solid fa-circle-check"></i> Redeemed</span>`;
+        cardClass += ' unlockable';
+      } else if (isUnlocked && canAfford) {
+        statusHTML = `<button class="redeem-btn" onclick="redeemCoupon('${m.code}')"><i class="fa-solid fa-gift mr-1"></i> Redeem (${m.cost} pts)</button>`;
+        cardClass += ' unlockable';
+      } else if (isUnlocked && !canAfford) {
+        statusHTML = `<button class="redeem-btn" disabled>Need ${m.cost - pts} more pts</button>`;
+        cardClass += ' locked';
+      } else {
+        statusHTML = `
+          <div class="w-full">
+            <div class="flex justify-between text-[10px] text-gray-400 mb-1">
+              <span><i class="fa-solid fa-lock"></i> Unlocks at ${m.at} pts</span>
+              <span>${Math.round(progress)}%</span>
+            </div>
+            <div class="progress-mini">
+              <div class="progress-mini-fill" style="width:${progress}%; background:${m.color}"></div>
+            </div>
+          </div>`;
+        cardClass += ' locked';
+      }
+
+      grid.innerHTML += `
+        <div class="${cardClass}" id="store-${m.code}">
+          <div class="brand-strip" style="background: linear-gradient(90deg, ${m.color}, ${m.color}88)"></div>
+          <div class="p-5">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background: ${m.color}15">
+                ${m.icon}
+              </div>
+              <div class="flex-1">
+                <p class="font-bold text-base text-gray-800">${m.brand}</p>
+                <p class="text-gray-400 text-xs">${m.desc}</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xl font-black" style="color: ${m.color}">${m.discount}</span>
+              <span class="text-xs text-gray-400 font-semibold bg-gray-100 px-2 py-1 rounded-lg">${m.cost} pts</span>
+            </div>
+            <div class="flex items-center justify-center">
+              ${statusHTML}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // ========== REDEEM COUPON ==========
+  window.redeemCoupon = function(code) {
+    const m = allCouponMilestones.find(c => c.code === code);
+    if (!m) return;
+
+    const pts = getPoints();
+    if (pts < m.cost) {
+      alert('Not enough points!');
+      return;
+    }
+
+    // Deduct points and save coupon
+    setPoints(pts - m.cost);
+    const coupons = getCoupons();
+    if (!coupons.find(c => c.code === code)) {
+      coupons.push(m);
+      localStorage.setItem('ht_coupons', JSON.stringify(coupons));
+    }
+
+    // Animate the card
+    const card = document.getElementById('store-' + code);
+    if (card) card.classList.add('redeem-success');
+
+    // Re-render everything
+    renderAll();
+  };
+
+  // ========== RENDER REDEEMED COUPONS ==========
+  function renderCoupons() {
+    const coupons = getCoupons();
+    const grid = document.getElementById('couponGrid');
+    const noMsg = document.getElementById('noCoupons');
+
+    if (coupons.length === 0) {
+      grid.classList.add('hidden');
+      noMsg.classList.remove('hidden');
+      return;
+    }
+
+    grid.classList.remove('hidden');
+    noMsg.classList.add('hidden');
+    grid.innerHTML = '';
+
+    coupons.forEach(c => {
+      grid.innerHTML += `
+        <div class="coupon-card p-6 flex items-center gap-5">
+          <div class="text-4xl">${c.icon}</div>
+          <div class="flex-1">
+            <p class="font-bold text-lg text-gray-800">${c.discount}</p>
+            <p class="text-gray-500 text-sm">${c.brand}</p>
+          </div>
+          <div class="text-center">
+            <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Code</p>
+            <span class="coupon-code text-amber-600 font-bold px-3 py-2 rounded-lg text-sm inline-block cursor-pointer" onclick="copyCode('${c.code}', this)" title="Click to copy">${c.code}</span>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  window.copyCode = function(code, el) {
+    navigator.clipboard.writeText(code);
+    const orig = el.textContent;
+    el.textContent = 'COPIED!';
+    el.style.color = '#10b981';
+    setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
+  };
+
+  // ========== RENDER BADGES ==========
+  function renderBadges() {
+    const pts = getPoints();
+    const completed = getCompleted();
+    const grid = document.getElementById('badgeGrid');
+
+    const badges = [
+      {
+        name: 'Explorer', desc: 'First trip completed', icon: 'fa-earth-americas',
+        color: 'blue', unlocked: completed.length >= 1
+      },
+      {
+        name: 'Photo Hunter', desc: 'Completed 3 photo challenges', icon: 'fa-camera-retro',
+        color: 'purple', unlocked: completed.length >= 3
+      },
+      {
+        name: 'Sharpshooter', desc: 'Completed all 6 challenges', icon: 'fa-bullseye',
+        color: 'red', unlocked: completed.length >= 6
+      },
+      {
+        name: 'Rising Star', desc: 'Earned 200+ points', icon: 'fa-star',
+        color: 'amber', unlocked: pts >= 200
+      },
+      {
+        name: 'Pro Traveler', desc: 'Reached 1000+ points', icon: 'fa-trophy',
+        color: 'yellow', unlocked: pts >= 1000
+      },
+      {
+        name: 'Legend', desc: 'Reached 2000+ points', icon: 'fa-crown',
+        color: 'orange', unlocked: pts >= 2000
+      }
+    ];
+
+    grid.innerHTML = '';
+    badges.forEach(b => {
+      grid.innerHTML += `
+        <div class="badge-card p-8 rounded-3xl text-center ${b.unlocked ? '' : 'opacity-50 grayscale hover:grayscale-0'}">
+          <div class="w-20 h-20 mx-auto mb-4 bg-${b.color}-500/20 rounded-full flex items-center justify-center">
+            <i class="fa-solid ${b.icon} text-3xl text-${b.color}-400"></i>
+          </div>
+          <h5 class="text-lg font-bold">${b.name}</h5>
+          <p class="text-gray-500 text-xs mt-2">${b.desc}</p>
+          <div class="mt-4 inline-block px-3 py-1 ${b.unlocked
+            ? `bg-${b.color}-500/20 text-${b.color}-400`
+            : 'bg-white/10 text-gray-400'
+          } rounded-full text-[10px] font-bold uppercase">
+            ${b.unlocked ? 'Unlocked' : '<i class="fa-solid fa-lock mr-1"></i> Locked'}
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // ========== CHALLENGE BADGE ==========
+  function updateChallengeBadge() {
+    const completed = getCompleted();
+    const remaining = 6 - completed.length;
+    document.getElementById('challengeBadge').textContent = remaining > 0 ? `${remaining} Active` : 'All Done!';
+  }
+
+  // ========== INIT ==========
+  function renderAll() {
+    renderPoints();
+    renderCouponStore();
+    renderCoupons();
+    renderBadges();
+    updateChallengeBadge();
+  }
+
+  // Initial render with localStorage data
+  renderAll();
+
+  // Then sync with backend when user is logged in and re-render
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      await syncWithBackend(user.uid);
+      renderAll(); // Re-render with synced data
+    }
+  });
+</script>
+
+</body>
+</html>

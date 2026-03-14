@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Upload Hidden Gem | HiddenTrails.AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    .glass-form {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+    }
+
+    .custom-input {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+      outline: none;
+    }
+    .custom-input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+    .custom-input::placeholder { color: #94a3b8; }
+
+    .glass-sidebar {
+      background: #f8fafc;
+      border-right: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+
+<body class="font-sans text-gray-800">
+
+<nav class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+  <div class="flex items-center gap-2">
+    <i class="fa-solid fa-compass text-green-400 text-2xl"></i>
+    <h1 class="text-xl font-black text-gray-800 tracking-tight">HiddenTrails.AI</h1>
+  </div>
+  <div class="flex items-center space-x-8 font-medium text-gray-600">
+    <a href="dashboard.html" class="hover:text-green-400 transition">Home</a>
+    <a href="saved.html" class="hover:text-green-400 transition">Saved</a>
+    <a href="#" id="logoutBtn" class="bg-red-500/20 text-red-400 px-5 py-2 rounded-xl border border-red-500/50 hover:bg-red-600 hover:text-white transition">Logout</a>
+  </div>
+</nav>
+
+<div class="flex min-h-[calc(100vh-72px)]">
+
+  <aside class="w-72 glass-sidebar p-8 space-y-3">
+    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Main Menu</p>
+    <a href="dashboard.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-house"></i> Dashboard
+    </a>
+    <a href="plantrips.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-map-location-dot"></i> Plan Trip
+    </a>
+    <a href="saved.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-bookmark"></i> Saved Trips
+    </a>
+    <a href="rewards.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-gift"></i> Rewards
+    </a>
+    <a href="upload-gem.html" class="flex items-center gap-3 p-4 bg-green-500/20 text-green-400 rounded-2xl font-bold border border-green-500/30">
+      <i class="fa-solid fa-gem"></i> Upload Gem
+    </a>
+  </aside>
+
+  <main class="flex-1 p-12 overflow-y-auto flex justify-center items-start">
+    <div class="max-w-2xl w-full glass-form p-10 mt-4">
+
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-black tracking-tight mb-2 text-gray-800">Upload Hidden Gem 💎</h2>
+        <p class="text-gray-500 text-sm">Share a secret spot that other travelers should know about.</p>
+      </div>
+
+      <form id="gemForm" class="space-y-6">
+        <div class="space-y-2">
+          <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Place Name</label>
+          <input id="placeName" type="text" placeholder="e.g. Secret Waterfall"
+            class="w-full p-4 rounded-2xl custom-input" required />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">City / State</label>
+            <input id="location" type="text" placeholder="e.g. Coorg, Karnataka"
+              class="w-full p-4 rounded-2xl custom-input" required />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Category</label>
+            <select id="category" class="w-full p-4 rounded-2xl custom-input">
+              <option value="Nature" class="bg-gray-800">🌿 Nature</option>
+              <option value="Heritage" class="bg-gray-800">🏛️ Heritage</option>
+              <option value="Adventure" class="bg-gray-800">⛰️ Adventure</option>
+              <option value="Food" class="bg-gray-800">🍜 Food</option>
+              <option value="Cultural" class="bg-gray-800">🎭 Cultural</option>
+              <option value="Other" class="bg-gray-800">📍 Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Description</label>
+          <textarea id="description" rows="4" placeholder="What makes this place special?"
+            class="w-full p-4 rounded-2xl custom-input resize-none" required></textarea>
+        </div>
+
+        <!-- GPS Coordinates -->
+        <div class="grid grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Latitude</label>
+            <input id="lat" type="number" step="any" placeholder="Auto-detect"
+              class="w-full p-4 rounded-2xl custom-input" readonly />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Longitude</label>
+            <input id="lng" type="number" step="any" placeholder="Auto-detect"
+              class="w-full p-4 rounded-2xl custom-input" readonly />
+          </div>
+        </div>
+        <button type="button" id="gpsBtn"
+          class="w-full py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 border border-gray-200 text-sm font-bold transition text-gray-700">
+          <i class="fa-solid fa-location-crosshairs mr-2 text-green-400"></i> Detect My GPS Location
+        </button>
+
+        <button type="submit" id="uploadBtn"
+          class="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-xl font-black uppercase tracking-widest mt-4 transition-all transform hover:scale-[1.02] shadow-lg shadow-green-900/30">
+          Upload Gem <i class="fa-solid fa-upload ml-2"></i>
+        </button>
+      </form>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCtSKfk3j-RaExSaumaeGoQlJQckBDZ32c",
+    authDomain: "hiddentrails-ai.firebaseapp.com",
+    projectId: "hiddentrails-ai",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUserId = null;
+
+  // Auth guard
+  onAuthStateChanged(auth, (user) => {
+    if (!user) window.location.href = "auth.html";
+    else currentUserId = user.uid;
+  });
+
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    signOut(auth).then(() => window.location.href = "auth.html");
+  });
+
+  // GPS detect
+  document.getElementById("gpsBtn").addEventListener("click", () => {
+    const btn = document.getElementById("gpsBtn");
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Detecting...';
+
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported by your browser.");
+      btn.innerHTML = '<i class="fa-solid fa-location-crosshairs mr-2 text-green-400"></i> Detect My GPS Location';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        document.getElementById("lat").value = pos.coords.latitude.toFixed(6);
+        document.getElementById("lng").value = pos.coords.longitude.toFixed(6);
+        btn.innerHTML = '<i class="fa-solid fa-check mr-2 text-green-400"></i> Location Detected!';
+        btn.classList.add("border-green-500/50");
+      },
+      (err) => {
+        alert("GPS error: " + err.message);
+        btn.innerHTML = '<i class="fa-solid fa-location-crosshairs mr-2 text-green-400"></i> Detect My GPS Location';
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+
+  // Form submit — save to Firestore "pois" collection
+  document.getElementById("gemForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const btn = document.getElementById("uploadBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Uploading...';
+
+    try {
+      const gemData = {
+        name: document.getElementById("placeName").value.trim(),
+        location: document.getElementById("location").value.trim(),
+        category: document.getElementById("category").value,
+        description: document.getElementById("description").value.trim(),
+        latitude: parseFloat(document.getElementById("lat").value) || null,
+        longitude: parseFloat(document.getElementById("lng").value) || null,
+        uploadedBy: currentUserId,
+        verified: false,
+        createdAt: new Date().toISOString()
+      };
+
+      await addDoc(collection(db, "pois"), gemData);
+      alert("Hidden gem uploaded successfully! 💎");
+      document.getElementById("gemForm").reset();
+      document.getElementById("gpsBtn").innerHTML = '<i class="fa-solid fa-location-crosshairs mr-2 text-green-400"></i> Detect My GPS Location';
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload. Please try again.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Upload Gem <i class="fa-solid fa-upload ml-2"></i>';
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Plan Your Trip | HiddenTrails.AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* ✅ WHITE BACKGROUND */
+    body {
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    /* ✅ FORM CONTAINER */
+    .glass-form {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 32px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    /* ✅ INPUT STYLING */
+    .custom-input {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #1e293b !important;
+      transition: all 0.3s ease;
+    }
+    .custom-input:focus {
+      border-color: #10b981 !important;
+      background: #ffffff !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      outline: none;
+    }
+    .custom-input::placeholder { color: #94a3b8; }
+
+    /* Custom Date Picker Icon Color */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+    }
+
+    .glass-sidebar {
+      background: #f8fafc;
+      border-right: 1px solid #e2e8f0;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981, #059669);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+    }
+  </style>
+</head>
+
+<body class="font-sans text-gray-800">
+
+<nav class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+  <div class="flex items-center gap-2">
+    <i class="fa-solid fa-compass text-green-400 text-2xl"></i>
+    <h1 class="text-xl font-black text-gray-800 tracking-tight">HiddenTrails.AI</h1>
+  </div>
+  <div class="flex items-center space-x-8 font-medium text-gray-600">
+    <a href="dashboard.html" class="hover:text-green-400 transition">Home</a>
+    <a href="saved.html" class="hover:text-green-400 transition">Saved</a>
+    <a href="#" id="logoutBtn" class="bg-red-500/20 text-red-400 px-5 py-2 rounded-xl border border-red-500/50 hover:bg-red-600 transition">Logout</a>
+  </div>
+</nav>
+
+<div class="flex min-h-[calc(100vh-72px)]">
+
+  <aside class="w-72 glass-sidebar p-8 space-y-3">
+    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Main Menu</p>
+    <a href="dashboard.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-house"></i> Dashboard
+    </a>
+    <a href="plantrips.html" class="flex items-center gap-3 p-4 bg-green-500/20 text-green-400 rounded-2xl font-bold border border-green-500/30">
+      <i class="fa-solid fa-map-location-dot"></i> Plan Trip
+    </a>
+    <a href="saved.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-bookmark"></i> Saved Trips
+    </a>
+    <a href="rewards.html" class="flex items-center gap-3 p-4 text-gray-600 hover:bg-gray-100 rounded-2xl transition">
+      <i class="fa-solid fa-gift"></i> Rewards
+    </a>
+  </aside>
+
+  <main class="flex-1 p-12 overflow-y-auto flex justify-center items-start">
+    <div class="max-w-3xl w-full glass-form p-10 mt-4">
+      
+      <div class="text-center mb-10">
+        <h2 class="text-3xl font-black tracking-tight mb-2 text-gray-800">Plan Your Next Move ✈️</h2>
+        <p class="text-gray-500 text-sm">Our AI will scout the best hidden gems for you.</p>
+      </div>
+
+      <form id="tripForm" class="space-y-6">
+        <div class="space-y-2">
+          <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Where to?</label>
+          <input id="destination" type="text" placeholder="Goa, Delhi, Kolkata..." class="w-full p-4 rounded-2xl custom-input" required />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Arrival Date</label>
+            <input id="arrivalDate" type="date" class="w-full p-4 rounded-2xl custom-input" required />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Return Date</label>
+            <input id="returnDate" type="date" class="w-full p-4 rounded-2xl custom-input" required />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Budget (₹)</label>
+            <input id="budget" type="number" placeholder="30000" class="w-full p-4 rounded-2xl custom-input" required />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-bold text-green-400 uppercase tracking-wider ml-1">Vibe / Preference</label>
+            <select id="preference" class="w-full p-4 rounded-2xl custom-input appearance-none">
+              <option class="text-slate-900">Adventure</option>
+              <option class="text-slate-900">Relaxation</option>
+              <option class="text-slate-900">Culture</option>
+              <option class="text-slate-900">Nature</option>
+              <option class="text-slate-900">Luxury</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" id="generateBtn" class="w-full py-5 rounded-2xl btn-primary text-xl font-black uppercase tracking-widest mt-4">
+          Generate Itinerary <i class="fa-solid fa-wand-magic-sparkles ml-2"></i>
+        </button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCtSKfk3j-RaExSaumaeGoQlJQckBDZ32c",
+    authDomain: "hiddentrails-ai.firebaseapp.com",
+    projectId: "hiddentrails-ai",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUserId = null;
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.location.href = "auth.html"; return; }
+    currentUserId = user.uid;
+  });
+
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    signOut(auth).then(() => window.location.href = "auth.html");
+  });
+
+  const form = document.getElementById("tripForm");
+  const btn = document.getElementById("generateBtn");
+
+  // Prevent selecting past dates
+const today = new Date().toISOString().split("T")[0];
+document.getElementById("arrivalDate").min = today;
+document.getElementById("returnDate").min = today;
+
+// Ensure return date can't be before arrival
+document.getElementById("arrivalDate").addEventListener("change", () => {
+  document.getElementById("returnDate").min =
+    document.getElementById("arrivalDate").value;
+});
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const destination = document.getElementById("destination").value.trim();
+    const budget = parseInt(document.getElementById("budget").value);
+    if (!budget || budget < 1000) {
+         alert("Minimum budget must be ₹1000.");
+         return;
+    }
+    if (budget > 10000000) {
+         alert("Budget seems unrealistic. Please enter a valid amount.");
+         return;
+    }
+    const preference = document.getElementById("preference").value;
+    const arrivalDate = document.getElementById("arrivalDate").value;
+    const returnDate = document.getElementById("returnDate").value;
+    const todayDate = new Date();
+    todayDate.setHours(0,0,0,0);
+
+    const arrival = new Date(arrivalDate);
+    const ret = new Date(returnDate);
+
+    if (arrival < todayDate) {
+  alert("Arrival date cannot be in the past.");
+  return;
+}
+
+   if (ret < arrival) {
+  alert("Return date must be after arrival date.");
+  return;
+}
+
+    const diffTime = new Date(returnDate) - new Date(arrivalDate);
+    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    if (days <= 0) {
+      alert("Return date must be after arrival date.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `Generating... <i class="fa-solid fa-spinner fa-spin ml-2"></i>`;
+
+    try {
+      // Send userId so backend saves the trip to Firestore for us
+      const response = await fetch("http://localhost:5000/generate-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destination, days, preference, budget,
+          userId: currentUserId,
+          arrivalDate, returnDate
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        alert("Backend error: " + errData.error);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!data || !Array.isArray(data.days)) {
+        alert("AI failed to generate itinerary");
+        return;
+      }
+
+      // If backend saved the trip and returned a tripId, use it directly
+      let tripId = data.tripId;
+
+      // Fallback: save from frontend if backend didn't save (no userId case)
+      if (!tripId) {
+        const docRef = await addDoc(collection(db, "trips"), {
+          destination,
+          daysCount: days,
+          budget,
+          preference,
+          arrivalDate,
+          returnDate,
+          total_estimated_cost: data.total_estimated_cost,
+          days: data.days,
+          createdAt: new Date()
+        });
+        tripId = docRef.id;
+      }
+
+      window.location.href = `itinerary.html?id=${tripId}`;
+
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Check if your backend server is running.");
+    } finally {
+      btn.disabled = false;
+      btn.innerText = "Generate Itinerary";
+    }
+  });
+</script>
+
+</body>
+</html>
