@@ -142,15 +142,32 @@
     });
 
     // FORGOT PASSWORD
-    document.getElementById("forgotPassword").addEventListener("click", (e) => {
-      e.preventDefault();
-      let email = document.getElementById("email").value.trim();
-      if (!email) { alert("Enter username/email first"); return; }
-      email = getFullEmail(email);
-      sendPasswordResetEmail(auth, email)
-        .then(() => { alert("Password reset link sent! 📩"); })
-        .catch(err => { alert(err.message); });
+document.getElementById("forgotPassword").addEventListener("click", (e) => {
+  e.preventDefault();
+
+  let email = document.getElementById("email").value.trim();
+
+  if (!email) {
+    alert("Please enter your email/username first");
+    return;
+  }
+
+  email = getFullEmail(email);
+
+  const confirmReset = confirm(
+    "We will send a password reset link to your email.\nDo you want to continue?"
+  );
+
+  if (!confirmReset) return;
+
+  sendPasswordResetEmail(auth, email)
+    .then(() => {
+      alert("✅ Reset link sent! Check your email.");
+    })
+    .catch(err => {
+      alert("Error: " + err.message);
     });
+});
   </script>
 
 </body>
