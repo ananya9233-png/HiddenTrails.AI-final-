@@ -7,30 +7,45 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="m-0 p-0 font-sans">
+    
+    <nav class="absolute top-0 w-full flex items-center justify-between px-10 py-5 z-50">
+    
+    <div class="w-24 hidden md:block"></div> 
 
-    <nav class="flex items-center justify-between px-10 py-5 bg-white shadow-sm sticky top-0 z-50">
-        <div class="w-24 hidden md:block"></div> 
+    <h1 class="text-3xl font-extrabold text-white tracking-tight">
+        HiddenTrails.AI
+    </h1>
 
-        <h1 class="text-3xl font-extrabold text-green-600 tracking-tight">HiddenTrails.AI</h1>
+    <a href="auth.html" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-bold transition duration-300 shadow-md">
+        Login
+    </a>
+</nav>
+<header 
+  class="h-[100vh] flex items-center justify-center text-center bg-cover bg-center relative"
+  style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');"
+>
 
-        <a href="auth.html" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-bold transition duration-300 shadow-md">
-            Login
-        </a>
-    </nav>
+  <!-- overlay -->
+  <div class="absolute inset-0 bg-black/60"></div>
 
-    <header class="h-[90vh] flex items-center justify-center text-center bg-white">
-        <div class="px-6">
-            <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight text-gray-800">
-                Explore Travel the <br><span class="text-green-600">Smart Way</span>
-            </h1>
-            <p class="text-lg md:text-xl text-gray-500 mb-10 max-w-3xl mx-auto font-medium">
-                AI-powered eco travel planner that helps you discover hidden gems and earn rewards.
-            </p>
-            <a href="auth.html" class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-xl text-lg font-bold transition-all transform hover:scale-105 inline-block shadow-lg">
-                Get Started
-            </a>
-        </div>
-    </header>
+  <div class="px-6 relative z-10">
+    <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight text-white">
+      Explore Travel the <br><span class="text-green-400">Smart Way</span>
+    </h1>
+    <p class="text-lg md:text-xl text-gray-200 mb-10 max-w-3xl mx-auto font-medium">
+      AI-powered eco travel planner that helps you discover hidden gems and earn rewards.
+    </p>
+    <a href="auth.html" class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-xl text-lg font-bold transition-all transform hover:scale-105 inline-block shadow-lg">
+      Get Started
+    </a>
+  </div>
+
+</header>
+
+    
+
+    
+
 
 </body>
 </html>

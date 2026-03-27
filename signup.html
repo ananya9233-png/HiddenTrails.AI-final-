@@ -6,16 +6,26 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+<body class="m-0 p-0 font-sans flex items-center justify-center min-h-screen relative">
 
-<body class="m-0 p-0 font-sans flex items-center justify-center min-h-screen relative bg-white">
+  <!-- 🔥 Background Image -->
+  <div 
+    class="absolute inset-0 bg-cover bg-center"
+    style="background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');">
+  </div>
 
+  <!-- 🔥 Overlay (same as index page, slightly transparent) -->
+  <div class="absolute inset-0 bg-black/60"></div>
+
+  <!-- NAV -->
   <nav class="absolute top-0 w-full flex items-center justify-between px-10 py-5 z-50">
-    <a href="index.html" class="text-xl font-black text-gray-800 tracking-tight">
+    <a href="index.html" class="text-xl font-black text-white tracking-tight">
       HiddenTrails.AI
     </a>
   </nav>
 
-  <div class="relative z-10 w-full max-w-md p-8 mx-4 bg-gray-50 border border-gray-200 rounded-3xl shadow-xl">
+  <!-- MAIN CARD -->
+  <div class="relative z-10 w-full max-w-md p-8 mx-4 bg-gray-50/90 backdrop-blur-md border border-gray-200 rounded-3xl shadow-xl">
 
     <div class="text-center mb-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-2">Create Account</h2>
@@ -29,12 +39,8 @@
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
           <i class="fa-solid fa-user text-sm"></i>
         </span>
-        <input
-          id="fullName"
-          type="text"
-          placeholder="Your name"
-          class="w-full bg-white border border-gray-300 p-3 pl-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition"
-        />
+        <input id="fullName" type="text" placeholder="Your name"
+          class="w-full bg-white border border-gray-300 p-3 pl-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition" />
       </div>
     </div>
 
@@ -45,12 +51,8 @@
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-300">
           <i class="fa-solid fa-envelope text-sm"></i>
         </span>
-        <input
-          id="email"
-          type="email"
-          placeholder="you@example.com"
-          class="w-full bg-white border border-gray-300 p-3 pl-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition"
-        />
+        <input id="email" type="email" placeholder="you@example.com"
+          class="w-full bg-white border border-gray-300 p-3 pl-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition" />
       </div>
     </div>
 
@@ -61,13 +63,10 @@
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-300">
           <i class="fa-solid fa-lock text-sm"></i>
         </span>
-        <input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          class="w-full bg-white border border-gray-300 p-3 pl-10 pr-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition"
-        />
-        <span id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-800 transition select-none" title="Show / Hide">
+        <input id="password" type="password" placeholder="••••••••"
+          class="w-full bg-white border border-gray-300 p-3 pl-10 pr-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition" />
+        <span id="togglePassword"
+          class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-800 transition select-none">
           <i class="fa-solid fa-eye"></i>
         </span>
       </div>
@@ -80,24 +79,16 @@
         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
           <i class="fa-solid fa-shield-halved text-sm"></i>
         </span>
-        <input
-          id="confirmPassword"
-          type="password"
-          placeholder="••••••••"
-          class="w-full bg-white border border-gray-300 p-3 pl-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition"
-        />
+        <input id="confirmPassword" type="password" placeholder="••••••••"
+          class="w-full bg-white border border-gray-300 p-3 pl-10 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition" />
       </div>
     </div>
 
-    <!-- SIGNUP BUTTON -->
-    <button
-      id="signupBtn"
-      class="w-full bg-green-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-700 shadow-lg shadow-green-900/20 transform transition active:scale-95"
-    >
+    <button id="signupBtn"
+      class="w-full bg-green-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-700 shadow-lg shadow-green-900/20 transform transition active:scale-95">
       Create Account
     </button>
 
-    <!-- LOGIN LINK -->
     <p class="text-center text-gray-500 mt-8 text-sm">
       Already have an account?
       <a href="auth.html" class="text-green-600 font-bold hover:text-green-700 transition underline-offset-4 hover:underline">
@@ -127,16 +118,15 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Password toggle
     const togglePassword = document.getElementById("togglePassword");
     const passwordInput = document.getElementById("password");
+
     togglePassword.addEventListener("click", () => {
       const isHidden = passwordInput.type === "password";
       passwordInput.type = isHidden ? "text" : "password";
       togglePassword.innerHTML = isHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
     });
 
-    // Signup logic
     document.getElementById("signupBtn").addEventListener("click", async () => {
       const fullName = document.getElementById("fullName").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -148,8 +138,11 @@
         return;
       }
 
-      if (password.length < 6) {
-        alert("Password must be at least 6 characters");
+      // 🔥 STRONG PASSWORD VALIDATION (ADDED)
+      const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+
+      if (!strongRegex.test(password)) {
+        alert("Password must be 8+ chars with Uppercase, Lowercase, Number & Special Character");
         return;
       }
 
@@ -166,7 +159,6 @@
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Create user document in Firestore "users" collection
         await setDoc(doc(db, "users", user.uid), {
           name: fullName,
           email: user.email,
