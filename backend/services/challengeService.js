@@ -12,6 +12,7 @@ import {
   getGroqHeaders,
   LLAMA_TEXT_MODEL,
 } from "../config/groq.js";
+import { db as firestoreDb } from "../config/firebase.js";
 
 /**
  * Generate photo challenges for a destination's landmarks.
@@ -41,7 +42,9 @@ You MUST respond ONLY in this exact JSON format with no extra text:
       "name": "Landmark Name",
       "description": "Take a photo of this iconic spot",
       "difficulty": "Easy",
-      "points": 100
+      "points": 100,
+      "latitude": 15.2993,
+      "longitude": 74.1240
     }
   ]
 }
@@ -52,6 +55,7 @@ Rules:
 - Points: Easy=100, Medium=130, Hard=150
 - difficulty can be Easy, Medium, or Hard based on how iconic/accessible the spot is
 - description should be a short challenge instruction (e.g. "Capture the sunset at Baga Beach")
+- latitude and longitude MUST be the real GPS coordinates of each landmark (use your knowledge)
 - Return ONLY valid JSON, max 6 challenges`;
 
     const response = await fetch(GROQ_BASE_URL, {
@@ -162,18 +166,52 @@ Rules:
     }
 
     // ======= SAVE NEW CHALLENGES =======
+    // Check admin database for curated place data before saving
     const batch = db.batch();
     for (const challenge of parsed.challenges) {
+      // Try to find this place in the admin-curated touristPlaces collection
+      let dbImage = null;
+      let dbDescription = challenge.description || `Photograph ${challenge.name}`;
+      let dbLatitude = challenge.latitude || null;
+      let dbLongitude = challenge.longitude || null;
+      let dbDifficulty = challenge.difficulty || "Medium";
+      let dbPoints = challenge.points || 100;
+
+      try {
+        const placesSnapshot = await firestoreDb.collection("touristPlaces").get();
+        const challengeNameLower = challenge.name.toLowerCase();
+
+        placesSnapshot.forEach(doc => {
+          const placeData = doc.data();
+          const placeNameLower = (placeData.name || "").toLowerCase();
+
+          // Match if names are similar
+          if (placeNameLower.includes(challengeNameLower) || challengeNameLower.includes(placeNameLower)) {
+            console.log(`🗄️ Found database match for challenge "${challenge.name}" → "${placeData.name}"`);
+            dbImage = placeData.imageUrl || null;
+            if (placeData.description) dbDescription = placeData.description;
+            if (placeData.latitude) dbLatitude = placeData.latitude;
+            if (placeData.longitude) dbLongitude = placeData.longitude;
+            if (placeData.difficulty) dbDifficulty = placeData.difficulty;
+            if (placeData.points) dbPoints = placeData.points;
+          }
+        });
+      } catch (dbErr) {
+        console.warn("⚠️ Could not check touristPlaces database:", dbErr.message);
+      }
+
       const docRef = db.collection("photoChallenges").doc();
       batch.set(docRef, {
         userId,
         destination,
         name: challenge.name,
-        description: challenge.description || `Photograph ${challenge.name}`,
-        difficulty: challenge.difficulty || "Medium",
-        points: challenge.points || 100,
+        description: dbDescription,
+        difficulty: dbDifficulty,
+        points: dbPoints,
+        latitude: dbLatitude,
+        longitude: dbLongitude,
         completed: false,
-        image: null, // Will be fetched from Wikipedia API on frontend
+        image: dbImage, // Uses database image if available, null otherwise (fetched on frontend)
         createdAt: new Date(),
       });
     }

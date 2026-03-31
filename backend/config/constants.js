@@ -52,8 +52,8 @@ export const COUPONS = {
 // ==================== PHOTO CHALLENGE ====================
 
 export const PHOTO_CHALLENGE = {
-  MIN_LANDMARK_MATCH_SCORE: 75,      // Landmark match must be >75 out of 100
-  MIN_LIVENESS_SCORE: 70,            // Liveness check must be >70 out of 100
+  MIN_LANDMARK_MATCH_SCORE: 30,      // Landmark match must be >30 out of 100
+  MIN_LIVENESS_SCORE: 30,            // Liveness check must be >30 out of 100
 
   // Point values per challenge difficulty
   POINTS: {

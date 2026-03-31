@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel | HiddenTrails.AI</title>
+  <meta name="description" content="Admin panel for managing tourist places, images, and descriptions for HiddenTrails.AI" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #f8fafc; min-height: 100vh; }
+
+    /* Login overlay */
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+    .login-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .login-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 28px; padding: 48px; width: 420px; max-width: 90vw;
+    }
+
+    /* Glass card */
+    .glass-card {
+      background: white; border: 1px solid #e2e8f0; border-radius: 20px;
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+
+    /* Table */
+    .place-row { transition: all 0.2s; border-bottom: 1px solid #f1f5f9; }
+    .place-row:hover { background: #f8fafc; }
+    .place-row:last-child { border-bottom: none; }
+
+    /* Thumbnail */
+    .thumb { width: 96px; height: 72px; border-radius: 12px; object-fit: cover; border: 2px solid #e2e8f0; flex-shrink: 0; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-panel {
+      background: white; border-radius: 24px; padding: 36px;
+      width: 640px; max-width: 92vw; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Image preview */
+    .img-preview {
+      width: 100%; height: 200px; border-radius: 16px; object-fit: cover;
+      border: 2px dashed #e2e8f0; background: #f8fafc;
+      display: none;
+    }
+    .img-preview.loaded { display: block; border-style: solid; border-color: #10b981; }
+
+    /* Form input */
+    .form-input {
+      width: 100%; padding: 12px 16px; border-radius: 12px;
+      border: 1.5px solid #e2e8f0; background: #f8fafc;
+      font-size: 14px; outline: none; transition: all 0.2s;
+    }
+    .form-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 8px; font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-easy { background: #dcfce7; color: #16a34a; }
+    .badge-medium { background: #fef3c7; color: #d97706; }
+    .badge-hard { background: #fee2e2; color: #dc2626; }
+    .badge-db { background: #dbeafe; color: #2563eb; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 30px; right: 30px; z-index: 300;
+      padding: 16px 24px; border-radius: 14px; color: white;
+      font-weight: 600; font-size: 14px; display: none;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      animation: slideUp 0.3s ease-out;
+    }
+    .toast.success { background: #10b981; display: block; }
+    .toast.error { background: #ef4444; display: block; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+
+    /* Stats card */
+    .stat-card {
+      background: white; border: 1px solid #e2e8f0; border-radius: 16px;
+      padding: 24px; display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+
+    /* Delete confirm */
+    .confirm-panel {
+      background: white; border-radius: 20px; padding: 32px;
+      max-width: 400px; width: 90%; text-align: center;
+      animation: slideUp 0.3s ease-out;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════ LOGIN GATE ═══════════════ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card text-center">
+    <div class="text-5xl mb-4">🔐</div>
+    <h2 class="text-2xl font-black text-white mb-2">Admin Access</h2>
+    <p class="text-gray-400 text-sm mb-8">Enter your admin key to manage tourist places</p>
+    <input
+      type="password"
+      id="adminKeyInput"
+      placeholder="Enter admin key..."
+      class="w-full px-5 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 outline-none focus:border-emerald-400 transition text-center text-lg tracking-widest"
+      autofocus
+    />
+    <button
+      id="loginBtn"
+      onclick="attemptLogin()"
+      class="w-full mt-4 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] text-lg"
+    >
+      <i class="fa-solid fa-right-to-bracket mr-2"></i> Enter Admin Panel
+    </button>
+    <p id="loginError" class="text-red-400 text-sm mt-4 hidden">Invalid admin key. Try again.</p>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN LAYOUT ═══════════════ -->
+<nav class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+      <i class="fa-solid fa-shield-halved text-emerald-500 text-lg"></i>
+    </div>
+    <div>
+      <h1 class="text-lg font-black text-gray-800 tracking-tight leading-none">HiddenTrails.AI</h1>
+      <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Admin Panel</span>
+    </div>
+  </div>
+  <div class="flex items-center gap-4">
+    <a href="dashboard.html" class="text-sm text-gray-500 hover:text-emerald-500 transition flex items-center gap-1.5">
+      <i class="fa-solid fa-arrow-left"></i> Back to App
+    </a>
+    <button onclick="logout()" class="text-sm bg-red-50 text-red-500 px-4 py-2 rounded-xl border border-red-200 hover:bg-red-500 hover:text-white transition font-semibold">
+      <i class="fa-solid fa-lock mr-1"></i> Lock
+    </button>
+  </div>
+</nav>
+
+<main class="max-w-6xl mx-auto px-6 py-8">
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+    <div class="stat-card">
+      <div class="stat-icon bg-emerald-50 text-emerald-500"><i class="fa-solid fa-map-pin"></i></div>
+      <div>
+        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Total Places</p>
+        <p id="statTotal" class="text-2xl font-black text-gray-800">0</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon bg-blue-50 text-blue-500"><i class="fa-solid fa-image"></i></div>
+      <div>
+        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">With Images</p>
+        <p id="statImages" class="text-2xl font-black text-gray-800">0</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon bg-amber-50 text-amber-500"><i class="fa-solid fa-fire"></i></div>
+      <div>
+        <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Challenges Ready</p>
+        <p id="statChallenges" class="text-2xl font-black text-gray-800">0</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div class="relative flex-1 max-w-md">
+      <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input
+        type="text" id="searchInput" placeholder="Search places..."
+        class="form-input pl-11"
+        oninput="handleSearch()"
+      />
+    </div>
+    <button
+      onclick="openAddModal()"
+      class="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-105 flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+    >
+      <i class="fa-solid fa-plus"></i> Add Tourist Place
+    </button>
+  </div>
+
+  <!-- Places Table -->
+  <div class="glass-card overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h3 class="text-sm font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+        <i class="fa-solid fa-database text-emerald-500"></i> Tourist Places Database
+      </h3>
+      <button onclick="loadPlaces()" class="text-xs text-gray-400 hover:text-emerald-500 transition flex items-center gap-1">
+        <i class="fa-solid fa-rotate"></i> Refresh
+      </button>
+    </div>
+
+    <!-- Table Header -->
+    <div class="grid grid-cols-12 gap-3 px-6 py-3 bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+      <div class="col-span-2">Image</div>
+      <div class="col-span-2">Name</div>
+      <div class="col-span-2">Location</div>
+      <div class="col-span-2">Description</div>
+      <div class="col-span-1">Difficulty</div>
+      <div class="col-span-1">Points</div>
+      <div class="col-span-2 text-right">Actions</div>
+    </div>
+
+    <!-- Table Body -->
+    <div id="placesBody">
+      <div class="p-12 text-center text-gray-400">
+        <i class="fa-solid fa-spinner fa-spin text-2xl mb-3"></i>
+        <p class="text-sm">Loading places...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div id="emptyState" class="hidden text-center py-16">
+    <div class="text-6xl mb-4">🏔️</div>
+    <h3 class="text-xl font-bold text-gray-600 mb-2">No Tourist Places Yet</h3>
+    <p class="text-gray-400 mb-6 max-w-md mx-auto">
+      Start adding tourist places with images and descriptions. They'll appear automatically in itineraries and photo challenges.
+    </p>
+    <button onclick="openAddModal()" class="bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-3 rounded-xl font-bold transition">
+      <i class="fa-solid fa-plus mr-2"></i> Add Your First Place
+    </button>
+  </div>
+
+</main>
+
+<!-- ═══════════════ ADD / EDIT MODAL ═══════════════ -->
+<div class="modal-overlay" id="formModal">
+  <div class="modal-panel">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-black text-gray-800 flex items-center gap-2">
+        <i class="fa-solid fa-map-pin text-emerald-500"></i>
+        <span id="modalTitle">Add Tourist Place</span>
+      </h3>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Image Preview -->
+    <img id="imagePreview" class="img-preview mb-5" alt="Preview" />
+    <div id="imagePreviewPlaceholder" class="w-full h-48 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center mb-5">
+      <i class="fa-solid fa-image text-3xl text-gray-300 mb-2"></i>
+      <p class="text-sm text-gray-400">Paste image URL below to preview</p>
+    </div>
+
+    <form id="placeForm" onsubmit="handleFormSubmit(event)">
+      <input type="hidden" id="editId" value="" />
+
+      <!-- Row 1: Name + Location -->
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Place Name *</label>
+          <input type="text" id="placeName" class="form-input" placeholder="e.g. Taj Mahal" required />
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Location</label>
+          <input type="text" id="placeLocation" class="form-input" placeholder="e.g. Agra, Uttar Pradesh" />
+        </div>
+      </div>
+
+      <!-- Row 2: Image URL -->
+      <div class="mb-4">
+        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Image URL *</label>
+        <input
+          type="url" id="placeImage" class="form-input" required
+          placeholder="https://images.unsplash.com/..." oninput="previewImage()"
+        />
+        <p class="text-xs text-gray-400 mt-1">Paste any hosted image URL (Unsplash, Wikimedia, etc.)</p>
+      </div>
+
+      <!-- Row 3: Description -->
+      <div class="mb-4">
+        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Description</label>
+        <textarea id="placeDescription" class="form-input" rows="3" placeholder="Brief description of the place..."></textarea>
+      </div>
+
+      <!-- Row 4: Lat, Lng, Difficulty, Points -->
+      <div class="grid grid-cols-4 gap-3 mb-4">
+        <div>
+          <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Latitude</label>
+          <input type="number" id="placeLat" class="form-input" placeholder="27.17" step="any" />
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Longitude</label>
+          <input type="number" id="placeLng" class="form-input" placeholder="78.04" step="any" />
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Difficulty</label>
+          <select id="placeDifficulty" class="form-input">
+            <option value="Easy">Easy</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Points</label>
+          <input type="number" id="placePoints" class="form-input" value="100" min="10" max="500" />
+        </div>
+      </div>
+
+      <!-- Row 5: Tags -->
+      <div class="mb-6">
+        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 block">Tags (comma-separated)</label>
+        <input type="text" id="placeTags" class="form-input" placeholder="monument, heritage, agra" />
+      </div>
+
+      <!-- Submit -->
+      <div class="flex items-center justify-end gap-3">
+        <button type="button" onclick="closeModal()" class="px-5 py-3 text-gray-500 hover:text-gray-700 font-semibold transition">Cancel</button>
+        <button type="submit" id="submitBtn"
+          class="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white px-8 py-3 rounded-xl font-bold transition-all transform hover:scale-105 shadow-lg flex items-center gap-2">
+          <i class="fa-solid fa-check mr-1"></i>
+          <span id="submitBtnText">Save Place</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════ DELETE CONFIRM ═══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="confirm-panel">
+    <div class="text-5xl mb-4">🗑️</div>
+    <h3 class="text-xl font-bold text-gray-800 mb-2">Delete Place?</h3>
+    <p class="text-gray-500 text-sm mb-6">
+      Are you sure you want to delete <strong id="deleteName"></strong>?
+      This cannot be undone.
+    </p>
+    <div class="flex gap-3 justify-center">
+      <button onclick="closeDeleteModal()" class="px-5 py-3 bg-gray-100 text-gray-600 rounded-xl font-semibold hover:bg-gray-200 transition">Cancel</button>
+      <button onclick="confirmDelete()" class="px-5 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-400 transition flex items-center gap-2">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+  // ═══════════════ STATE ═══════════════
+  let adminKey = sessionStorage.getItem("ht_admin_key") || "";
+  let allPlaces = [];
+  let deleteTargetId = null;
+  let deleteTargetName = "";
+  const API_BASE = "http://localhost:5000";
+
+  // ═══════════════ AUTH ═══════════════
+  // Auto-login if key is saved
+  if (adminKey) {
+    verifyAndEnter(adminKey);
+  }
+
+  document.getElementById("adminKeyInput").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") attemptLogin();
+  });
+
+  async function attemptLogin() {
+    const key = document.getElementById("adminKeyInput").value.trim();
+    if (!key) return;
+    await verifyAndEnter(key);
+  }
+
+  async function verifyAndEnter(key) {
+    try {
+      const res = await fetch(`${API_BASE}/admin/places`, {
+        headers: { "x-admin-key": key }
+      });
+
+      if (res.ok) {
+        adminKey = key;
+        sessionStorage.setItem("ht_admin_key", key);
+        document.getElementById("loginOverlay").classList.add("hidden");
+        document.getElementById("loginError").classList.add("hidden");
+        loadPlaces();
+      } else {
+        document.getElementById("loginError").classList.remove("hidden");
+        sessionStorage.removeItem("ht_admin_key");
+      }
+    } catch (err) {
+      document.getElementById("loginError").textContent = "Cannot connect to server. Is the backend running?";
+      document.getElementById("loginError").classList.remove("hidden");
+    }
+  }
+
+  function logout() {
+    adminKey = "";
+    sessionStorage.removeItem("ht_admin_key");
+    document.getElementById("loginOverlay").classList.remove("hidden");
+    document.getElementById("adminKeyInput").value = "";
+  }
+
+  // ═══════════════ API HELPERS ═══════════════
+  function apiHeaders() {
+    return {
+      "Content-Type": "application/json",
+      "x-admin-key": adminKey,
+    };
+  }
+
+  // ═══════════════ LOAD PLACES ═══════════════
+  async function loadPlaces() {
+    try {
+      const res = await fetch(`${API_BASE}/admin/places`, { headers: apiHeaders() });
+      if (!res.ok) throw new Error("Failed to load");
+      const data = await res.json();
+      allPlaces = data.places || [];
+      renderPlaces(allPlaces);
+      updateStats();
+    } catch (err) {
+      console.error("Load error:", err);
+      showToast("Failed to load places", "error");
+    }
+  }
+
+  // ═══════════════ RENDER TABLE ═══════════════
+  function renderPlaces(places) {
+    const body = document.getElementById("placesBody");
+    const empty = document.getElementById("emptyState");
+
+    if (places.length === 0) {
+      body.innerHTML = "";
+      empty.classList.remove("hidden");
+      return;
+    }
+
+    empty.classList.add("hidden");
+    body.innerHTML = places.map(p => {
+      const diffClass = p.difficulty === "Easy" ? "badge-easy" : p.difficulty === "Hard" ? "badge-hard" : "badge-medium";
+      const truncDesc = (p.description || "—").length > 50
+        ? (p.description || "").substring(0, 50) + "..."
+        : (p.description || "—");
+
+      return `
+        <div class="grid grid-cols-12 gap-3 px-6 py-4 items-center place-row">
+          <div class="col-span-2">
+            ${p.imageUrl
+              ? `<img src="${p.imageUrl}" class="thumb" alt="${p.name}" onerror="this.src='https://placehold.co/96x72/f1f5f9/94a3b8?text=No+Img'" />`
+              : `<div class="thumb bg-gray-100 flex items-center justify-center text-gray-400"><i class="fa-solid fa-image"></i></div>`
+            }
+          </div>
+          <div class="col-span-2">
+            <p class="font-bold text-gray-800 text-sm">${p.name}</p>
+            ${p.tags && p.tags.length > 0
+              ? `<div class="flex flex-wrap gap-1 mt-1">${p.tags.slice(0, 3).map(t => `<span class="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">${t}</span>`).join("")}</div>`
+              : ""
+            }
+          </div>
+          <div class="col-span-2 text-sm text-gray-500">${p.location || "—"}</div>
+          <div class="col-span-2 text-xs text-gray-400">${truncDesc}</div>
+          <div class="col-span-1"><span class="badge ${diffClass}">${p.difficulty || "Medium"}</span></div>
+          <div class="col-span-1 font-bold text-emerald-600 text-sm">${p.points || 100}</div>
+          <div class="col-span-2 flex items-center justify-end gap-2">
+            <button onclick="openEditModal('${p.id}')" class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition flex items-center justify-center" title="Edit">
+              <i class="fa-solid fa-pen-to-square text-xs"></i>
+            </button>
+            <button onclick="openDeleteModal('${p.id}', '${p.name.replace(/'/g, "\\'")}')" class="w-8 h-8 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition flex items-center justify-center" title="Delete">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ═══════════════ STATS ═══════════════
+  function updateStats() {
+    document.getElementById("statTotal").textContent = allPlaces.length;
+    document.getElementById("statImages").textContent = allPlaces.filter(p => p.imageUrl).length;
+    document.getElementById("statChallenges").textContent = allPlaces.filter(p => p.imageUrl && p.latitude && p.longitude).length;
+  }
+
+  // ═══════════════ SEARCH ═══════════════
+  function handleSearch() {
+    const q = document.getElementById("searchInput").value.trim().toLowerCase();
+    if (!q) {
+      renderPlaces(allPlaces);
+      return;
+    }
+    const filtered = allPlaces.filter(p =>
+      (p.name || "").toLowerCase().includes(q) ||
+      (p.location || "").toLowerCase().includes(q) ||
+      (p.tags || []).some(t => t.toLowerCase().includes(q))
+    );
+    renderPlaces(filtered);
+  }
+
+  // ═══════════════ ADD / EDIT MODAL ═══════════════
+  function openAddModal() {
+    document.getElementById("editId").value = "";
+    document.getElementById("modalTitle").textContent = "Add Tourist Place";
+    document.getElementById("submitBtnText").textContent = "Save Place";
+    document.getElementById("placeForm").reset();
+    document.getElementById("placePoints").value = "100";
+    document.getElementById("placeDifficulty").value = "Medium";
+    clearImagePreview();
+    document.getElementById("formModal").classList.add("active");
+  }
+
+  function openEditModal(id) {
+    const place = allPlaces.find(p => p.id === id);
+    if (!place) return;
+
+    document.getElementById("editId").value = id;
+    document.getElementById("modalTitle").textContent = "Edit Tourist Place";
+    document.getElementById("submitBtnText").textContent = "Update Place";
+    document.getElementById("placeName").value = place.name || "";
+    document.getElementById("placeLocation").value = place.location || "";
+    document.getElementById("placeImage").value = place.imageUrl || "";
+    document.getElementById("placeDescription").value = place.description || "";
+    document.getElementById("placeLat").value = place.latitude || "";
+    document.getElementById("placeLng").value = place.longitude || "";
+    document.getElementById("placeDifficulty").value = place.difficulty || "Medium";
+    document.getElementById("placePoints").value = place.points || 100;
+    document.getElementById("placeTags").value = (place.tags || []).join(", ");
+    previewImage();
+    document.getElementById("formModal").classList.add("active");
+  }
+
+  function closeModal() {
+    document.getElementById("formModal").classList.remove("active");
+  }
+
+  // ═══════════════ IMAGE PREVIEW ═══════════════
+  function previewImage() {
+    const url = document.getElementById("placeImage").value.trim();
+    const preview = document.getElementById("imagePreview");
+    const placeholder = document.getElementById("imagePreviewPlaceholder");
+
+    if (url) {
+      preview.src = url;
+      preview.onload = () => {
+        preview.classList.add("loaded");
+        placeholder.style.display = "none";
+      };
+      preview.onerror = () => {
+        clearImagePreview();
+      };
+    } else {
+      clearImagePreview();
+    }
+  }
+
+  function clearImagePreview() {
+    const preview = document.getElementById("imagePreview");
+    const placeholder = document.getElementById("imagePreviewPlaceholder");
+    preview.classList.remove("loaded");
+    preview.src = "";
+    placeholder.style.display = "flex";
+  }
+
+  // ═══════════════ FORM SUBMIT ═══════════════
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const id = document.getElementById("editId").value;
+    const body = {
+      name: document.getElementById("placeName").value.trim(),
+      location: document.getElementById("placeLocation").value.trim(),
+      imageUrl: document.getElementById("placeImage").value.trim(),
+      description: document.getElementById("placeDescription").value.trim(),
+      latitude: document.getElementById("placeLat").value,
+      longitude: document.getElementById("placeLng").value,
+      difficulty: document.getElementById("placeDifficulty").value,
+      points: document.getElementById("placePoints").value,
+      tags: document.getElementById("placeTags").value,
+    };
+
+    const submitBtn = document.getElementById("submitBtn");
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+
+    try {
+      const url = id
+        ? `${API_BASE}/admin/places/${id}`
+        : `${API_BASE}/admin/places`;
+      const method = id ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: apiHeaders(),
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save");
+      }
+
+      showToast(id ? "Place updated!" : "Place added!", "success");
+      closeModal();
+      await loadPlaces();
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i class="fa-solid fa-check mr-1"></i> <span id="submitBtnText">${id ? "Update" : "Save"} Place</span>`;
+    }
+  }
+
+  // ═══════════════ DELETE ═══════════════
+  function openDeleteModal(id, name) {
+    deleteTargetId = id;
+    deleteTargetName = name;
+    document.getElementById("deleteName").textContent = name;
+    document.getElementById("deleteModal").classList.add("active");
+  }
+
+  function closeDeleteModal() {
+    document.getElementById("deleteModal").classList.remove("active");
+    deleteTargetId = null;
+  }
+
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/places/${deleteTargetId}`, {
+        method: "DELETE",
+        headers: apiHeaders(),
+      });
+
+      if (!res.ok) throw new Error("Failed to delete");
+
+      showToast(`Deleted "${deleteTargetName}"`, "success");
+      closeDeleteModal();
+      await loadPlaces();
+    } catch (err) {
+      showToast("Failed to delete place", "error");
+    }
+  }
+
+  // ═══════════════ TOAST ═══════════════
+  function showToast(message, type = "success") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    setTimeout(() => { toast.className = "toast"; }, 3000);
+  }
+</script>
+
+</body>
+</html>

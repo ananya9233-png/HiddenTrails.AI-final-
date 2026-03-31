@@ -264,10 +264,17 @@
   const auth = getAuth(app);
 
   // ========== DATA ==========
-  function getPoints() { return parseInt(localStorage.getItem('ht_reward_points') || '0'); }
-  function setPoints(p) { localStorage.setItem('ht_reward_points', String(p)); }
-  function getCompleted() { return JSON.parse(localStorage.getItem('ht_completed_challenges') || '[]'); }
-  function getCoupons() { return JSON.parse(localStorage.getItem('ht_coupons') || '[]'); }
+  let currentUserId = null; // set by Firebase auth below
+
+  function getUserKey(key) {
+    const uid = currentUserId || 'guest';
+    return `ht_${uid}_${key}`;
+  }
+  function getPoints() { return parseInt(localStorage.getItem(getUserKey('reward_points')) || '0'); }
+  function setPoints(p) { localStorage.setItem(getUserKey('reward_points'), String(p)); }
+  function getCompleted() { return JSON.parse(localStorage.getItem(getUserKey('completed_challenges')) || '[]'); }
+  function getCoupons() { return JSON.parse(localStorage.getItem(getUserKey('coupons')) || '[]'); }
+  
 
   const allCouponMilestones = [
     { at: 100,  cost: 80,   code: 'TRAIL10',   discount: '10% OFF',   brand: 'MakeMyTrip',       icon: '✈️',  color: '#3b82f6',  desc: 'Domestic flight bookings' },
@@ -313,7 +320,7 @@
         if (data.completedChallenges && data.completedChallenges.length > 0) {
           const local = getCompleted();
           const merged = [...new Set([...local, ...data.completedChallenges])];
-          localStorage.setItem('ht_completed_challenges', JSON.stringify(merged));
+          localStorage.setItem(getUserKey('completed_challenges'), JSON.stringify(merged));
         }
         console.log(`✅ Synced with backend: ${finalPts} pts`);
       }
@@ -421,7 +428,7 @@
     const coupons = getCoupons();
     if (!coupons.find(c => c.code === code)) {
       coupons.push(m);
-      localStorage.setItem('ht_coupons', JSON.stringify(coupons));
+      localStorage.setItem(getUserKey('coupons'), JSON.stringify(coupons));
     }
 
     // Animate the card
@@ -548,10 +555,12 @@
   // Then sync with backend when user is logged in and re-render
   onAuthStateChanged(auth, async (user) => {
     if (user) {
+      currentUserId = user.uid;  // ← SET USER ID FIRST
       await syncWithBackend(user.uid);
       renderAll(); // Re-render with synced data
     }
   });
+ 
 </script>
 
 </body>
