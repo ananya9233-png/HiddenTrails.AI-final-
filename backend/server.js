@@ -24,6 +24,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 // Load environment variables FIRST
 dotenv.config();
@@ -39,6 +41,7 @@ import photoRoutes from "./routes/photoRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
 import rewardRoutes from "./routes/rewardRoutes.js";
 import couponRoutes from "./routes/couponRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import { seedCoupons } from "./utils/seedCoupons.js";
 
 // ═══════════════ APP SETUP ═══════════════
@@ -50,6 +53,11 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json({ limit: "10mb" })); // Increased limit for base64 images
 app.use(requestLogger);
+
+// ── Serve Frontend Static Files ──
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+app.use(express.static(join(__dirname, "..")));
 
 // ── Health Check ──
 app.get("/health", (req, res) => {
@@ -69,6 +77,7 @@ app.use(photoRoutes);       // POST /verify-photo, POST /photo/verify
 app.use(imageRoutes);       // GET  /get-destination-image
 app.use(rewardRoutes);      // GET  /rewards/:userId, POST /rewards/claim-trip
 app.use(couponRoutes);      // GET  /coupons, POST /coupon/redeem
+app.use(adminRoutes);       // CRUD /admin/places
 
 // ── 404 Handler ──
 app.use((req, res) => {
@@ -105,6 +114,7 @@ app.listen(PORT, () => {
   console.log("     GET  /coupons                  — Available Coupons");
   console.log("     POST /coupon/redeem            — Redeem Coupon");
   console.log("     GET  /health                   — Health Check");
+  console.log("     CRUD /admin/places              — Admin Tourist Places");
   console.log("═══════════════════════════════════════════════════════════");
 
   // Seed sample coupons on first run

@@ -56,38 +56,43 @@ export async function validateGPSForChallenge(params, poiCoords, db) {
 
   // ---- Check 3: Historical GPS analysis (teleport + speed) ----
   // Fetch recent GPS logs for this user (last 30 minutes)
-  const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+  try {
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-  const logsSnapshot = await db
-    .collection("gpsLogs")
-    .where("userId", "==", params.userId)
-    .where("timestamp", ">=", thirtyMinAgo)
-    .orderBy("timestamp", "asc")
-    .limit(50)
-    .get();
+    const logsSnapshot = await db
+      .collection("gpsLogs")
+      .where("userId", "==", params.userId)
+      .where("timestamp", ">=", thirtyMinAgo)
+      .orderBy("timestamp", "asc")
+      .limit(50)
+      .get();
 
-  const recentLogs = [];
-  logsSnapshot.forEach((doc) => recentLogs.push(doc.data()));
+    const recentLogs = [];
+    logsSnapshot.forEach((doc) => recentLogs.push(doc.data()));
 
-  // Add the current point to the log for analysis
-  recentLogs.push({
-    latitude: params.latitude,
-    longitude: params.longitude,
-    timestamp: new Date(params.timestamp),
-  });
+    // Add the current point to the log for analysis
+    recentLogs.push({
+      latitude: params.latitude,
+      longitude: params.longitude,
+      timestamp: new Date(params.timestamp),
+    });
 
-  // Check for teleportation (>20km in 5 minutes)
-  if (recentLogs.length >= 2) {
-    const teleportResult = detectTeleport(recentLogs);
-    if (teleportResult.detected) {
-      errors.push(`GPS teleport: ${teleportResult.details}`);
+    // Check for teleportation (>20km in 5 minutes)
+    if (recentLogs.length >= 2) {
+      const teleportResult = detectTeleport(recentLogs);
+      if (teleportResult.detected) {
+        errors.push(`GPS teleport: ${teleportResult.details}`);
+      }
+
+      // Check for speed spikes (>150 km/h)
+      const speedResult = detectSpeedSpike(recentLogs);
+      if (speedResult.detected) {
+        errors.push(`Speed spike: ${speedResult.details}`);
+      }
     }
-
-    // Check for speed spikes (>150 km/h)
-    const speedResult = detectSpeedSpike(recentLogs);
-    if (speedResult.detected) {
-      errors.push(`Speed spike: ${speedResult.details}`);
-    }
+  } catch (gpsHistoryErr) {
+    // Firestore composite index may not exist — skip history checks gracefully
+    console.warn("⚠️ GPS history check skipped (index may be missing):", gpsHistoryErr.message);
   }
 
   return {

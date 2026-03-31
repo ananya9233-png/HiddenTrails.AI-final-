@@ -122,11 +122,31 @@
     signOut(auth).then(() => window.location.href = "auth.html");
   });
 
-  // Delete trip function
+  // Delete trip function — also removes associated photo challenges
   window.deleteTrip = async function(tripId, el) {
-    if (!confirm("Delete this trip? This can't be undone.")) return;
+    if (!confirm("Delete this trip? This will also remove associated photo challenges.")) return;
     try {
+      // First, get the trip data to know the destination
+      const { getDoc } = await import("https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js");
+      const tripDoc = await getDoc(doc(db, "trips", tripId));
+      const tripData = tripDoc.exists() ? tripDoc.data() : null;
+
+      // Delete the trip from Firestore
       await deleteDoc(doc(db, "trips", tripId));
+
+      // Also delete associated photo challenges via backend
+      if (tripData && tripData.destination && tripData.userId) {
+        try {
+          await fetch(
+            `http://localhost:5000/photo-challenges/${tripData.userId}/${encodeURIComponent(tripData.destination)}`,
+            { method: "DELETE" }
+          );
+          console.log(`🗑️ Deleted photo challenges for ${tripData.destination}`);
+        } catch (chalErr) {
+          console.warn("⚠️ Could not delete photo challenges (server may be offline):", chalErr.message);
+        }
+      }
+
       el.closest(".trip-card").remove();
       // Check if container is now empty
       if (container.children.length === 0) {

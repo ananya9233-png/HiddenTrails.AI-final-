@@ -48,5 +48,31 @@ router.get("/photo-challenges/:userId", async (req, res) => {
     }
   }
 });
+// DELETE /photo-challenges/:userId/:destination — delete all challenges for a user+destination
+router.delete("/photo-challenges/:userId/:destination", async (req, res) => {
+  try {
+    const { userId, destination } = req.params;
+    const decodedDestination = decodeURIComponent(destination);
+
+    const snapshot = await db.collection("photoChallenges")
+      .where("userId", "==", userId)
+      .where("destination", "==", decodedDestination)
+      .get();
+
+    if (snapshot.empty) {
+      return res.json({ deleted: 0, message: "No challenges found for this destination" });
+    }
+
+    const batch = db.batch();
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+
+    console.log(`🗑️ Deleted ${snapshot.size} photo challenges for ${decodedDestination} (user: ${userId})`);
+    res.json({ deleted: snapshot.size, message: `Deleted ${snapshot.size} challenges for ${decodedDestination}` });
+  } catch (err) {
+    console.error("❌ Delete challenges error:", err);
+    res.status(500).json({ error: "Failed to delete challenges" });
+  }
+});
 
 export default router;

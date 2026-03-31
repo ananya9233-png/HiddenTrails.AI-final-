@@ -12,6 +12,7 @@ dotenv.config();
 export const GROQ_BASE_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 // API key loaded from environment variable
+
 export const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 if (!GROQ_API_KEY) {

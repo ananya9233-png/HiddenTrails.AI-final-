@@ -1,0 +1,28 @@
+Search results for Arjun Gufa tourist landmark:
+
+Opensearch for Arjun Gufa: ["Arjun Muralidharan","Arjun Gupta (actor)","Arjun Suravaram","Arjun Kumar Sengupta","Arjun Kumar Gupta"]
+
+Arjun Muralidharan:
+  description: Indian swimmer
+  extract: Arjun Muralidharan is an Indian swimmer who has earned 15 national titles. He is widely considered as one of the greatest butterfly swimmers of India.
+  image: https://upload.wikimedia.org/wikipedia/commons/8/8d/ArjunatSAFGames100fly.jpg
+
+Arjun Gupta (actor):
+  description: American actor
+  extract: Arjun Gupta is an American actor. He is known for his roles as substance-addicted nurse Sam on Showtime's Nurse Jackie and William "Penny" Adiyodi on 
+  image: https://upload.wikimedia.org/wikipedia/commons/6/6b/Arjun_Gupta.jpg
+
+Arjun Suravaram:
+  description: 2019 Indian film
+  extract: Arjun Suravaram is a 2019 Indian Telugu-language action thriller film written and directed by T. Santhosh. The film stars Nikhil Siddharth and Lavanya
+  image: https://upload.wikimedia.org/wikipedia/en/8/87/Arjun_Suravaram.jpg
+
+Arjun Kumar Sengupta:
+  description: Indian economist and politician
+  extract: Arjun Kumar Sengupta was an Indian economist. He served as a Member of the Parliament of India, representing West Bengal in the Rajya Sabha from 2006 
+  image: https://upload.wikimedia.org/wikipedia/commons/0/05/ARJUN_desk.jpg
+
+Arjun Kumar Gupta:
+  description: Statistician (1938–2022)
+  extract: Arjun Kumar Gupta was a Distinguished Research Professor in the Department of Mathematics & Statistics at Bowling Green State University in Ohio.
+  image: https://upload.wikimedia.org/wikipedia/commons/d/d8/Dec_14%2C_Doc_76.jpg
