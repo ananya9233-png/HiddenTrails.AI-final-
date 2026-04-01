@@ -82,7 +82,7 @@ export const PHOTO_CHALLENGE = {
 
 export const CHATBOT = {
   MAX_HISTORY_LENGTH: 20,            // Keep last 20 messages to prevent token overflow
-  MAX_TOKENS: 120,                   // Max response tokens
+  MAX_TOKENS: 1024,                   // Max response tokens
   TEMPERATURE: 0.7,                  // Creativity setting
 };
 

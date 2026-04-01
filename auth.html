@@ -87,10 +87,12 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-    import {
+     import {
       getAuth,
       signInWithEmailAndPassword,
-      sendPasswordResetEmail
+      sendPasswordResetEmail,
+      confirmPasswordReset,
+      verifyPasswordResetCode
     } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -168,6 +170,68 @@ document.getElementById("forgotPassword").addEventListener("click", (e) => {
       alert("Error: " + err.message);
     });
 });
+// ========== HANDLE PASSWORD RESET FROM EMAIL LINK ==========
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const oobCode = urlParams.get('oobCode');
+
+    if (mode === 'resetPassword' && oobCode) {
+      // Hide login form, show reset password form
+      document.querySelector('.relative.z-10').innerHTML = `
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">Set New Password</h2>
+          <p class="text-gray-500 text-sm">Enter your new password below</p>
+        </div>
+        <div class="relative mb-6">
+          <label class="block text-xs font-bold text-gray-600 uppercase tracking-widest mb-2 ml-1">New Password</label>
+          <input id="newPassword" type="password" placeholder="••••••••"
+            class="w-full bg-white border border-gray-300 p-3 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition"/>
+        </div>
+        <div class="relative mb-6">
+          <label class="block text-xs font-bold text-gray-600 uppercase tracking-widest mb-2 ml-1">Confirm Password</label>
+          <input id="confirmPassword" type="password" placeholder="••••••••"
+            class="w-full bg-white border border-gray-300 p-3 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-400 outline-none transition"/>
+        </div>
+        <button id="resetBtn"
+          class="w-full bg-green-600 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-green-700 shadow-lg transition active:scale-95">
+          Reset Password
+        </button>
+        <p id="resetMsg" class="text-center text-sm mt-4"></p>
+      `;
+
+      document.getElementById('resetBtn').addEventListener('click', async () => {
+        const newPass = document.getElementById('newPassword').value.trim();
+        const confirmPass = document.getElementById('confirmPassword').value.trim();
+        const msg = document.getElementById('resetMsg');
+
+        if (!newPass || !confirmPass) {
+          msg.textContent = '⚠️ Please fill in both fields.';
+          msg.className = 'text-center text-sm mt-4 text-red-500';
+          return;
+        }
+        if (newPass !== confirmPass) {
+          msg.textContent = '⚠️ Passwords do not match.';
+          msg.className = 'text-center text-sm mt-4 text-red-500';
+          return;
+        }
+        if (newPass.length < 6) {
+          msg.textContent = '⚠️ Password must be at least 6 characters.';
+          msg.className = 'text-center text-sm mt-4 text-red-500';
+          return;
+        }
+
+        try {
+          await confirmPasswordReset(auth, oobCode, newPass);
+          msg.textContent = '✅ Password reset! Redirecting to login...';
+          msg.className = 'text-center text-sm mt-4 text-green-600 font-bold';
+          setTimeout(() => window.location.href = 'auth.html', 2000);
+        } catch (err) {
+          msg.textContent = '❌ ' + err.message;
+          msg.className = 'text-center text-sm mt-4 text-red-500';
+        }
+      });
+    }
   </script>
 
 </body>
