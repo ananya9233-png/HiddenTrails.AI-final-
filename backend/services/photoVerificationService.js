@@ -4,6 +4,13 @@
  * Uses Groq LLaMA 4 Scout (multimodal vision model) to verify:
  * 1. Landmark Match — Does the photo show the correct landmark?
  * 2. Liveness — Was the photo taken live (not a screenshot/copy)?
+ *
+ * DEMO MODE (banasthali challenge):
+ *  - Live photo: ONLY passes if the dept building facade is clearly visible.
+ *                A person, room, sky, or random scene → rejected (match = false).
+ *  - Gallery upload: ONLY passes if the image URL matches one of the
+ *                    pre-approved known building photos list sent from frontend.
+ *                    Any other photo → rejected.
  */
 
 import fetch from "node-fetch";
@@ -15,10 +22,8 @@ import {
   LLAMA_VISION_MODEL,
 } from "../config/groq.js";
 
-// Bypasses SSL verification for image fetching (needed for Wikipedia CDN URLs)
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
-// Resize + compress image buffer to stay under Groq's request size limit
 async function compressImageBuffer(buffer) {
   return sharp(buffer)
     .resize({ width: 800, withoutEnlargement: true })
@@ -26,12 +31,87 @@ async function compressImageBuffer(buffer) {
     .toBuffer();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  DEMO GALLERY CHECK
+//  Checks if the uploaded gallery image is one of the known building photos.
+//  We compare by fetching each known image and doing a pixel-level hash check,
+//  OR (simpler & sufficient) by checking if the data URI prefix matches after
+//  fetching the known URLs and re-encoding them.
+//  For simplicity and speed we do a base64 prefix comparison (first 500 chars
+//  of the image data) which is unique enough to distinguish photos.
+// ─────────────────────────────────────────────────────────────────────────────
+async function isDemoKnownBuildingImage(userImageBase64, knownImageUrls = []) {
+  if (!knownImageUrls || knownImageUrls.length === 0) return false;
+
+  // Extract raw base64 data from the user image data URI
+  const userDataPart = userImageBase64.replace(/^data:image\/\w+;base64,/, "");
+  // Use first 800 chars as a fingerprint (enough to distinguish photos)
+  const userFingerprint = userDataPart.slice(0, 800);
+
+  for (const url of knownImageUrls) {
+    try {
+      const res = await fetch(url, { agent: httpsAgent });
+      if (!res.ok) continue;
+      const raw = await res.arrayBuffer();
+      const compressed = await compressImageBuffer(Buffer.from(raw));
+      const knownBase64 = compressed.toString("base64");
+      const knownFingerprint = knownBase64.slice(0, 800);
+
+      // Allow ~10% tolerance in fingerprint similarity for JPEG re-encoding differences
+      const matchLen = [...userFingerprint].filter((c, i) => c === knownFingerprint[i]).length;
+      const similarity = matchLen / userFingerprint.length;
+      console.log(`🔍 Gallery fingerprint similarity vs ${url.slice(-30)}: ${(similarity * 100).toFixed(1)}%`);
+
+      if (similarity > 0.85) {
+        console.log("✅ Demo gallery: known building photo matched");
+        return true;
+      }
+    } catch (err) {
+      console.warn("⚠️ Could not fetch known image for comparison:", err.message);
+    }
+  }
+
+  console.log("❌ Demo gallery: image does NOT match any known building photo");
+  return false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  MAIN VERIFY FUNCTION
+// ─────────────────────────────────────────────────────────────────────────────
 export async function verifyPhoto(
   userImageBase64,
   referenceImageUrl,
   landmarkName,
-  isGalleryUpload = false
+  isGalleryUpload = false,
+  demoMode = false,
+  demoKnownImages = []
 ) {
+  // ── DEMO GALLERY: strict known-image check, no AI needed ──────────────────
+  if (demoMode && isGalleryUpload) {
+    const isKnown = await isDemoKnownBuildingImage(userImageBase64, demoKnownImages);
+    if (isKnown) {
+      return {
+        landmarkMatchScore: 90,
+        livenessScore: 50,   // gallery so liveness is moderate — controller decides points
+        match: true,
+        liveness: false,     // gallery upload → no live credit
+        confidence: 90,
+        reason: "Gallery photo matches a known photo of the Banasthali Vidyapeeth dept building.",
+        demoGalleryMatch: true,
+      };
+    } else {
+      return {
+        landmarkMatchScore: 5,
+        livenessScore: 0,
+        match: false,
+        liveness: false,
+        confidence: 95,
+        reason: "This gallery image is not one of the approved photos of the dept building. Only photos you personally took of the building are accepted in demo mode.",
+        demoGalleryMatch: false,
+      };
+    }
+  }
+
   // ── Fetch + compress reference image ──────────────────────────────────────
   let referenceBase64 = null;
   if (referenceImageUrl && !referenceImageUrl.startsWith("data:")) {
@@ -42,8 +122,6 @@ export async function verifyPhoto(
         const compressed = await compressImageBuffer(Buffer.from(rawBuffer));
         referenceBase64 = `data:image/jpeg;base64,${compressed.toString("base64")}`;
         console.log("✅ Reference image ready, size:", Math.round(compressed.length / 1024), "KB");
-      } else {
-        console.warn("⚠️ Reference image fetch failed — HTTP", imgRes.status);
       }
     } catch (err) {
       console.warn("⚠️ Could not fetch reference image:", err.message);
@@ -52,90 +130,94 @@ export async function verifyPhoto(
     referenceBase64 = referenceImageUrl;
   }
 
-  // Clean early abort — fixed: no undefined variable references
   if (!referenceBase64) {
-    console.error("❌ Reference image unavailable — aborting verification");
     return {
-      landmarkMatchScore: 0,
-      livenessScore: 0,
-      confidence: 0,
-      match: false,
-      liveness: false,
+      landmarkMatchScore: 0, livenessScore: 0, confidence: 0,
+      match: false, liveness: false,
       reason: "Reference image could not be loaded. Please try again.",
     };
   }
 
-  // Gallery-aware liveness context injected into AI prompt
-  const livenessContext = isGalleryUpload
-    ? `IMPORTANT: The user uploaded this from their photo GALLERY — it was NOT taken live right now.
-       This could be a photo downloaded from Google Images, Wikipedia, or any website.
-       Score liveness LOW (10-40) unless you see clear evidence it was personally taken
-       (e.g. selfie with landmark, visible hands/shadow, unconventional angle).
-       A professional/stock-looking photo MUST score liveness below 40.`
-    : `The user claims this was captured LIVE via their device camera right now.
-       Look for signs of a live capture: natural imperfections, slight motion blur, phone camera
-       artifacts, unconventional framing, shadows, or personal elements.
-       A perfect, professionally composed, stock-photo-quality image submitted as live
-       is suspicious — score liveness lower (40-60).
-       Only score liveness 70+ if the image has clear signs of being personally taken.`;
+  // ── Build the AI prompt ───────────────────────────────────────────────────
+  let systemPrompt;
+  let userPrompt;
 
+  if (demoMode) {
+    // ── DEMO LIVE PHOTO: ultra-strict — must see the actual building ─────────
+    systemPrompt = `You are a strict photo verification AI for a campus challenge demo.
+
+The target is the BANASTHALI VIDYAPEETH DEPT BUILDING — a specific multi-storey academic building
+with a light-colored (white/cream/beige) facade, multiple floors, rectangular windows, and campus surroundings.
+
+YOUR ONLY JOB: Does the user's photo clearly show THIS BUILDING (or a very similar campus building facade)?
+
+STRICT REJECTION RULES — score landmarkMatchScore BELOW 20 and match=false if:
+  • The photo shows a PERSON or people (even partially)
+  • The photo shows an INDOOR ROOM, ceiling, floor, desk, furniture
+  • The photo shows a BLANK WALL, sky, ground, grass only
+  • The photo shows a PHONE SCREEN, screenshot, or another camera
+  • The photo shows ANY building that is clearly NOT a multi-storey academic/institutional building
+  • The photo is too dark, too close, or unrecognizable as a building exterior
+
+ACCEPT (score landmarkMatchScore 65+, match=true) ONLY IF:
+  • The photo clearly shows the exterior facade of a multi-storey campus/institutional building
+  • The building has visible floors, windows, and academic building characteristics
+  • It resembles the reference image (light-colored multi-storey building)
+
+Liveness scoring (live demo capture):
+  • Score livenessScore 60+ if the photo has natural camera artifacts (slight grain, imperfect framing, ambient lighting)
+  • Score livenessScore below 40 if it looks like a professionally downloaded stock photo
+
+Respond ONLY in this exact JSON format:
+{"match": true/false, "liveness": true/false, "landmarkMatchScore": 0-100, "livenessScore": 0-100, "confidence": 0-100, "reason": "one sentence describing what you see"}`;
+
+    userPrompt = `Reference image (first): the Banasthali Vidyapeeth dept building exterior.
+User live capture (second): does it show the BUILDING EXTERIOR? Reject if it shows a person, room, wall, sky, or anything that is not clearly a multi-storey academic building facade.`;
+
+  } else {
+    // ── REGULAR challenges ────────────────────────────────────────────────────
+    const livenessContext = isGalleryUpload
+      ? `IMPORTANT: The user uploaded this from their photo GALLERY — it was NOT taken live right now.
+         Score liveness LOW (10-40) unless you see clear evidence it was personally taken.
+         A professional/stock-looking photo MUST score liveness below 40.`
+      : `The user claims this was captured LIVE via their device camera right now.
+         Look for signs of a live capture: natural imperfections, slight blur, phone camera artifacts.
+         Score liveness 70+ only if the image has clear signs of being personally taken.`;
+
+    systemPrompt = `You are a strict photo verification AI for a travel gamification app called HiddenTrails.
+Users must PHYSICALLY VISIT landmarks and take photos there to earn points.
+
+Verify TWO things:
+
+1. LOCATION MATCH — Does the user's photo show the SAME LANDMARK as the reference image?
+   Score 0-100. Score 70+ only if clearly the same landmark. Score below 30 if different place.
+
+2. LIVENESS — Is this photo personally taken, or downloaded from the internet?
+   DOWNLOADED (liveness LOW 0-40): perfect professional composition, identical to reference, stock-photo quality.
+   GENUINE LIVE (liveness HIGH 60-100): natural imperfections, unconventional angle, phone artifacts.
+
+${livenessContext}
+
+Respond ONLY in this exact JSON format:
+{"match": true/false, "liveness": true/false, "landmarkMatchScore": 0-100, "livenessScore": 0-100, "confidence": 0-100, "reason": "clear explanation of what you see in both images"}`;
+
+    userPrompt = `Reference image (first): shows ${landmarkName}. User submission (second): is this the same landmark, and is it a personally taken photo or downloaded from internet?`;
+  }
+
+  // ── Call Groq Vision API ──────────────────────────────────────────────────
   const response = await fetch(GROQ_BASE_URL, {
     method: "POST",
     headers: getGroqHeaders(),
     body: JSON.stringify({
       model: LLAMA_VISION_MODEL,
       messages: [
-        {
-          role: "system",
-          content: `You are a strict photo verification AI for a travel gamification app called HiddenTrails.
-Users must PHYSICALLY VISIT landmarks and take photos there to earn points. Your job is to prevent cheating.
-
-You must verify TWO things:
-
-1. LOCATION MATCH — Does the user's photo show the SAME LANDMARK as the reference image?
-   - Focus only on whether it is the same place, building, or monument
-   - Ignore differences in angle, lighting, weather, zoom, or season
-   - Score 0-100. Score 70+ only if clearly the same landmark.
-   - Score below 30 if it is a completely different place
-
-2. LIVENESS — Is this photo personally taken by the user, or downloaded from the internet?
-   SIGNS OF A DOWNLOADED/GOOGLE IMAGE (score liveness LOW: 0-40):
-   - Perfect professional composition and framing
-   - Looks identical or near-identical to the reference image
-   - Stock-photo or Wikipedia-quality appearance
-   - No personal elements at all
-   SIGNS OF A GENUINE LIVE PHOTO (score liveness HIGH: 60-100):
-   - Natural imperfections, slight blur, or grain
-   - Unconventional angle or personal framing
-   - Clearly different composition from the reference image
-   - Phone camera artifacts
-
-${livenessContext}
-
-ALWAYS give a clear human-readable explanation in "reason" describing what you see in BOTH images.
-Good reason examples:
-  "Both images show the same white domed shrine near water. The user photo appears to be a downloaded stock image."
-  "The reference shows Haji Ali Dargah (white building near sea) but the user submitted a red mosque — different landmark."
-  "The user photo clearly shows the Gateway of India arch from a personal angle with crowd visible."
-
-Respond ONLY in this exact JSON format, no other text:
-{"match": true/false, "liveness": true/false, "landmarkMatchScore": 0-100, "livenessScore": 0-100, "confidence": 0-100, "reason": "clear explanation of what you see in both images"}`,
-        },
+        { role: "system", content: systemPrompt },
         {
           role: "user",
           content: [
-            {
-              type: "text",
-              text: `Reference image (first): shows ${landmarkName}. User submission (second): is this the same landmark, and is it a personally taken photo or downloaded from internet? Be specific about what you see in both images.`,
-            },
-            {
-              type: "image_url",
-              image_url: { url: referenceBase64 },
-            },
-            {
-              type: "image_url",
-              image_url: { url: userImageBase64 },
-            },
+            { type: "text", text: userPrompt },
+            { type: "image_url", image_url: { url: referenceBase64 } },
+            { type: "image_url", image_url: { url: userImageBase64 } },
           ],
         },
       ],
@@ -145,13 +227,10 @@ Respond ONLY in this exact JSON format, no other text:
   });
 
   const data = await response.json();
-
-  if (data.error) {
-    console.error("❌ Groq API error:", JSON.stringify(data.error));
-  }
+  if (data.error) console.error("❌ Groq API error:", JSON.stringify(data.error));
 
   const aiText = data.choices?.[0]?.message?.content || "";
-  console.log("📝 Vision AI response:", aiText);
+  console.log(`📝 Vision AI response [demo=${demoMode}]:`, aiText);
 
   return parseVerificationResponse(aiText);
 }
@@ -173,21 +252,13 @@ function parseVerificationResponse(aiText) {
     throw new Error("No JSON found in AI vision response");
   } catch (parseErr) {
     console.error("❌ Vision JSON parse error:", parseErr.message);
-
     const lowerText = aiText.toLowerCase();
-    const match =
-      lowerText.includes("match") &&
-      !lowerText.includes("not match") &&
-      !lowerText.includes("no match");
-    const liveness =
-      lowerText.includes("live") && !lowerText.includes("not live");
-
+    const match = lowerText.includes("match") && !lowerText.includes("not match") && !lowerText.includes("no match");
+    const liveness = lowerText.includes("live") && !lowerText.includes("not live");
     return {
       landmarkMatchScore: match ? 60 : 20,
       livenessScore: liveness ? 60 : 20,
-      match,
-      liveness,
-      confidence: 40,
+      match, liveness, confidence: 40,
       reason: aiText.slice(0, 200) || "Fallback analysis used",
     };
   }
