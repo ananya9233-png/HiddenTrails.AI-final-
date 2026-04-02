@@ -301,9 +301,17 @@ function getLevel(pts) {
 
 /* ================= COUPONS ================= */
 const allCouponMilestones = [
-  { at:100, cost:80, code:'TRAIL10', discount:'10% OFF', brand:'MakeMyTrip', icon:'✈️', color:'#3b82f6', desc:'Flights' },
-  { at:150, cost:120, code:'FOOD15', discount:'15% OFF', brand:'Zomato', icon:'🍔', color:'#ef4444', desc:'Food' },
-  { at:250, cost:200, code:'HIDDEN25', discount:'25% OFF', brand:'Goibibo', icon:'🏨', color:'#f59e0b', desc:'Hotels' }
+  { at: 100,  cost: 80,   code: 'TRAIL10',   discount: '10% OFF',   brand: 'MakeMyTrip',       icon: '✈️',  color: '#3b82f6',  desc: 'Flights' },
+  { at: 150,  cost: 120,  code: 'FOOD15',    discount: '15% OFF',   brand: 'Zomato',           icon: '🍔',  color: '#ef4444',  desc: 'Food' },
+  { at: 250,  cost: 200,  code: 'HIDDEN25',  discount: '25% OFF',   brand: 'Goibibo',          icon: '🏨',  color: '#f59e0b',  desc: 'Hotels' },
+
+  { at: 350,  cost: 280,  code: 'CAFE35',    discount: '₹350 OFF',  brand: 'Starbucks',        icon: '☕',  color: '#059669',  desc: 'Drinks' },
+  { at: 400,  cost: 350,  code: 'EXPLORE40', discount: '₹400 OFF',  brand: 'IRCTC',            icon: '🚂',  color: '#6366f1',  desc: 'Train tickets' },
+  { at: 500,  cost: 420,  code: 'SHOP50',    discount: '₹500 OFF',  brand: 'Amazon',           icon: '📦',  color: '#f97316',  desc: 'Shopping' },
+
+  { at: 600,  cost: 500,  code: 'WANDER50',  discount: '50% OFF',   brand: 'Zostel',           icon: '🏕️',  color: '#8b5cf6',  desc: 'Hostels' },
+  { at: 800,  cost: 700,  code: 'EPIC80',    discount: '₹800 OFF',  brand: 'Cleartrip',        icon: '🛫',  color: '#ec4899',  desc: 'Flights' },
+  { at: 1000, cost: 900,  code: 'LEGEND',    discount: '₹1500 OFF', brand: 'Booking.com',      icon: '🌍',  color: '#0ea5e9',  desc: 'Hotels' }
 ];
 
 /* ================= RENDER ALL ================= */
@@ -339,27 +347,30 @@ function renderPoints(userData) {
 }
 
 /* ================= STORE ================= */
-function renderCouponStore(userData) {
-  const pts = userData.rewardPoints || 0;
+
+function renderCoupons(userData) {
   const coupons = userData.coupons || [];
-  const grid = document.getElementById('storeGrid');
+  const grid = document.getElementById('couponGrid');
+  const emptyMsg = document.getElementById('noCoupons');
+
   grid.innerHTML = '';
 
-  allCouponMilestones.forEach(m => {
-    const isRedeemed = coupons.find(c => c.code === m.code);
-    const canBuy = pts >= m.cost;
+  if (coupons.length === 0) {
+    emptyMsg.classList.remove('hidden');
+    return;
+  }
 
+  emptyMsg.classList.add('hidden');
+
+  coupons.forEach(c => {
     grid.innerHTML += `
-      <div class="store-card p-5">
-        <h4 class="font-bold">${m.brand}</h4>
-        <p>${m.discount}</p>
-        ${
-          isRedeemed
-            ? `<span class="text-green-500 text-xs">Redeemed</span>`
-            : canBuy
-            ? `<button onclick="redeemCoupon('${m.code}')" class="redeem-btn">Redeem</button>`
-            : `<button disabled class="redeem-btn">Need ${m.cost - pts} pts</button>`
-        }
+      <div class="coupon-card p-6">
+        <h4 class="font-bold text-lg">${c.brand}</h4>
+        <p class="text-sm text-gray-500 mb-2">${c.discount}</p>
+
+        <div class="coupon-code px-4 py-2 text-center text-sm font-bold mt-3">
+          ${c.code}
+        </div>
       </div>
     `;
   });
@@ -387,28 +398,132 @@ window.redeemCoupon = async function(code) {
 };
 
 /* ================= COUPONS ================= */
-function renderCoupons(userData) {
-  const grid = document.getElementById('couponGrid');
+function renderCouponStore(userData) {
+  const pts = userData.rewardPoints || 0;
   const coupons = userData.coupons || [];
+  const grid = document.getElementById('storeGrid');
+  grid.innerHTML = '';
 
-  grid.innerHTML = coupons.map(c => `
-    <div class="coupon-card p-4">
-      <h4>${c.discount}</h4>
-      <p>${c.brand}</p>
-      <span>${c.code}</span>
-    </div>
-  `).join('');
+  allCouponMilestones.forEach(m => {
+    const isRedeemed = coupons.find(c => c.code === m.code);
+    const progress = Math.min(100, (pts / m.at) * 100);
+
+    grid.innerHTML += `
+      <div class="store-card ${isRedeemed ? '' : 'locked'}">
+        
+        <div class="brand-strip" style="background:${m.color}"></div>
+
+        <div class="p-5">
+
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                 style="background:${m.color}20">
+              ${m.icon}
+            </div>
+            <div>
+              <p class="font-bold text-gray-800">${m.brand}</p>
+              <p class="text-xs text-gray-400">${m.desc}</p>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-lg font-black" style="color:${m.color}">
+              ${m.discount}
+            </span>
+            <span class="text-xs text-gray-400">${m.cost} pts</span>
+          </div>
+
+          <div class="text-xs text-gray-400 mb-1 flex justify-between">
+            <span>Unlocks at ${m.at} pts</span>
+            <span>${Math.round(progress)}%</span>
+          </div>
+
+          <div class="progress-mini mb-3">
+            <div class="progress-mini-fill"
+                 style="width:${progress}%; background:${m.color}">
+            </div>
+          </div>
+
+          <div class="text-center">
+            ${
+              isRedeemed
+                ? `<span class="text-green-500 text-xs font-bold">
+                    <i class="fa-solid fa-check"></i> Redeemed
+                   </span>`
+                : pts >= m.cost
+                  ? `<button class="redeem-btn"
+                            onclick="redeemCoupon('${m.code}')">
+                        Redeem
+                     </button>`
+                  : `<button class="redeem-btn" disabled>
+                        Need ${m.cost - pts} pts
+                     </button>`
+            }
+          </div>
+
+        </div>
+      </div>
+    `;
+  });
 }
 
 /* ================= BADGES ================= */
 function renderBadges(userData) {
-  const grid = document.getElementById('badgeGrid');
+  const pts = userData.rewardPoints || 0;
   const completed = userData.completedChallenges || [];
+  const grid = document.getElementById('badgeGrid');
 
-  grid.innerHTML = `
-    <div class="badge-card p-6">Completed: ${completed.length}</div>
-  `;
+  const badges = [
+    {
+      name: 'Explorer', desc: 'First trip completed', icon: 'fa-earth-americas',
+      color: 'blue', unlocked: completed.length >= 1
+    },
+    {
+      name: 'Photo Hunter', desc: 'Completed 3 photo challenges', icon: 'fa-camera-retro',
+      color: 'purple', unlocked: completed.length >= 3
+    },
+    {
+      name: 'Sharpshooter', desc: 'Completed all challenges', icon: 'fa-bullseye',
+      color: 'red', unlocked: completed.length >= 6
+    },
+    {
+      name: 'Rising Star', desc: 'Earned 200+ points', icon: 'fa-star',
+      color: 'amber', unlocked: pts >= 200
+    },
+    {
+      name: 'Pro Traveler', desc: 'Reached 1000+ points', icon: 'fa-trophy',
+      color: 'yellow', unlocked: pts >= 1000
+    },
+    {
+      name: 'Legend', desc: 'Reached 2000+ points', icon: 'fa-crown',
+      color: 'orange', unlocked: pts >= 2000
+    }
+  ];
+
+  grid.innerHTML = '';
+
+  badges.forEach(b => {
+    grid.innerHTML += `
+      <div class="badge-card p-8 rounded-3xl text-center ${b.unlocked ? '' : 'opacity-50 grayscale'}">
+        <div class="w-20 h-20 mx-auto mb-4 bg-${b.color}-500/20 rounded-full flex items-center justify-center">
+          <i class="fa-solid ${b.icon} text-3xl text-${b.color}-400"></i>
+        </div>
+
+        <h5 class="text-lg font-bold">${b.name}</h5>
+        <p class="text-gray-500 text-xs mt-2">${b.desc}</p>
+
+        <div class="mt-4 inline-block px-3 py-1 ${
+          b.unlocked
+            ? `bg-${b.color}-500/20 text-${b.color}-400`
+            : 'bg-white/10 text-gray-400'
+        } rounded-full text-[10px] font-bold uppercase">
+          ${b.unlocked ? 'Unlocked' : '<i class="fa-solid fa-lock mr-1"></i> Locked'}
+        </div>
+      </div>
+    `;
+  });
 }
+
 
 /* ================= CHALLENGE COUNT ================= */
 function updateChallengeBadge(userData) {
