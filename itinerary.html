@@ -184,7 +184,31 @@ async function loadTrip() {
 
     const style = trip.trip_style ?? trip.preference ?? "Custom";
     tripTitle.innerText = `${trip.destination} – ${trip.days.length} Day ${style} Trip`;
-    budgetInfo.innerText = `Budget: ₹${trip.budget} | Estimated: ₹${trip.total_estimated_cost}`;
+  
+    if (trip.budget > 100000) {
+  trip.budget = 10000;
+}
+
+let grandTotal = 0;
+
+trip.days.forEach(day => {
+  const texts = [day.morning, day.afternoon, day.evening];
+
+
+  texts.forEach(text => {
+    const matches = text?.match(/₹[\d,]+/g);
+
+    if (matches) {
+      matches.forEach(m => {
+        const clean = m.replace(/[₹,]/g, '');
+        grandTotal += parseInt(clean);
+      });
+    }
+  });
+});
+
+budgetInfo.innerText = `Budget: ₹${trip.budget} | Estimated: ₹${grandTotal}`;
+   
 
     daysContainer.innerHTML = "";
     let imagesUpdated = false;
@@ -245,18 +269,40 @@ async function loadTrip() {
       }
 
       // Extract a location name for Google Maps from the day's data
-      const dayText = `${day.morning || ''} ${day.afternoon || ''}`;
-      let mapQuery = day.title ? `${day.title}, ${trip.destination}` : trip.destination;
-      // Try to extract a specific landmark name
-      const landmarkMatch = dayText.match(/(?:visit|explore|head to|go to|reach|arrive at)\s+(?:the\s+)?(?:iconic|famous|historic\s+)?([A-Z][A-Za-z\s'-]{3,30})/i);
-      if (landmarkMatch && landmarkMatch[1]) {
-        mapQuery = `${landmarkMatch[1].trim()}, ${trip.destination}`;
-      }
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQuery)}`;
+      const texts = [day.morning, day.afternoon, day.evening];
+
+let places = [];
+
+texts.forEach(text => {
+  const matches = text?.match(/(?:visit|explore|head to|go to|reach|arrive at)\s+(?:the\s+)?([A-Z][A-Za-z\s'-]{3,30})/gi);
+
+  if (matches) {
+    matches.forEach(m => {
+      const place = m.replace(/(?:visit|explore|head to|go to|reach|arrive at)\s+/i, '').trim();
+      places.push(`${place}, ${trip.destination}`);
+    });
+  }
+});
+
+// fallback
+if (places.length === 0) {
+  places.push(trip.destination);
+}
+
+// Build route
+// limit to max 4 places
+const limitedPlaces = places.slice(0, 4);
+
+const origin = limitedPlaces[0];
+const destination = limitedPlaces[limitedPlaces.length - 1];
+const waypoints = limitedPlaces.slice(1, -1).join('|');
+
+const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${encodeURIComponent(waypoints)}`;
+      
 
       card.innerHTML = `
         <h2 class="text-2xl font-black mb-4 text-gray-800">
-          <span class="text-green-500">Day ${day.day}:</span> ${day.title}
+          <span class="text-green-500">Day ${day.day}:</span> ${trip.destination}
         </h2>
 
         <img src="${imageUrl}" class="rounded-2xl mb-6 w-full h-72 object-cover border border-gray-200">
@@ -292,7 +338,23 @@ async function loadTrip() {
         </div>
 
         <div class="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
-          <span class="text-green-500 font-black text-lg">₹${day.estimated_cost}</span>
+          <span class="text-green-500 font-black text-lg">${(() => {
+  let total = 0;
+  const texts = [day.morning, day.afternoon, day.evening];
+
+  texts.forEach(text => {
+    const matches = text?.match(/₹[\d,]+/g); // FIXED REGEX
+
+    if (matches) {
+      matches.forEach(m => {
+        const clean = m.replace(/[₹,]/g, ''); // remove ₹ and commas
+        total += parseInt(clean);
+      });
+    }
+  });
+
+  return `₹${total}`;
+})()}</span>
           <div class="flex items-center gap-3">
             <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Estimated Cost</span>
             <a href="${mapsUrl}" target="_blank" rel="noopener"

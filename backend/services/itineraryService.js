@@ -24,30 +24,77 @@ export async function generateItinerary({ destination, days, preference, budget 
   const numDays = parseInt(days) || 3;
 
   // Structured prompt with explicit JSON schema to ensure parseable output
-  const prompt = `Create a ${numDays}-day travel itinerary for ${destination}. Budget: ₹${budget}. Trip vibe: ${preference}.
+  const prompt = `Create a ${numDays}-day travel itinerary for ${destination}.
+
+Budget: ₹${budget}
+Trip vibe: ${preference}
+
+IMPORTANT INSTRUCTIONS:
+
+- Budget MUST affect the itinerary:
+  - Low budget → budget hotels, street food, public transport, free attractions
+  - Medium budget → mix of comfort and affordability
+  - High budget → luxury hotels, fine dining, premium experiences
+
+- Preference MUST strongly influence the plan:
+  - Adventure → trekking, outdoor activities
+  - Cultural → temples, museums, heritage sites
+  - Relaxation → cafes, scenic spots, leisure places
+  - Nightlife → clubs, events, evening activities
+
+- Each itinerary MUST be different for different budgets and preferences.
+- Do NOT generate a generic tourist plan.
+- Each "morning", "afternoon", "evening" MUST be exactly 2–3 sentences (not more than 50 words). Keep it informative but concise and detailed sentences describing the place, experience, and what the user will see or do. Include specific details about the location, atmosphere, and activities.
+- Do NOT give short or one-line answers. Each section must feel like a detailed travel description.
+- Write in an engaging, storytelling style like a travel guide.
+- Each regenerated itinerary MUST be different from previous ones. Avoid repeating the same places.
+- Group activities based on proximity and logical travel flow.
+
+Each activity (morning, afternoon, evening) MUST include a clear cost breakdown in this format:
+- Mention cost per activity separately (₹XXX)
+- Keep costs realistic and aligned with the total budget
+- At the end of each day, ensure total matches the sum of activities
+
+BALANCED EXPLORATION RULE:
+
+- Each day MUST include:
+  - At least one popular landmark (well-known place)
+  - At least one hidden gem (less crowded or unique place)
+
+- Hidden places should be:
+  - Safe
+  - Accessible
+  - Not abandoned or restricted
+
+Day title format MUST be strictly:
+- Do NOT include extra words like budget-friendly, luxury, hidden gems, etc.
+
+LOCATION OPTIMIZATION RULE:
+- All places in a single day MUST be geographically close to each other
+- Do NOT suggest locations that are far apart within the same day
+- Minimize travel time between morning, afternoon, and evening locations
+- Prefer places within the same area or nearby region
+
+REAL-WORLD VALIDITY RULE:
+- Avoid places that are permanently closed or unsafe
+- Hidden places are allowed, but must be safe and visitable
+- Prefer locations that are generally open to tourists
 
 You MUST respond ONLY in this exact JSON format with no extra text:
 {
   "days": [
     {
       "day": 1,
-      "title": "Heritage & Cultural Exploration",
-      "morning": "Start your day with breakfast at a local cafe, then visit [famous landmark in ${destination}]. Entry fee ₹200.",
-      "afternoon": "Have lunch at [popular restaurant in ${destination}]. Then explore [real attraction in ${destination}] and enjoy the scenery.",
-      "evening": "Enjoy the evening at [real spot in ${destination}], followed by dinner at [real restaurant]. Try the local cuisine.",
+      "title": "Specific to ${destination}",
+      "morning": "...",
+      "afternoon": "...",
+      "evening": "...",
       "estimated_cost": 5000
     }
   ],
   "total_estimated_cost": 15000
-}
+}`;
 
-Rules:
-- CRITICAL: The "title" for each day MUST be specific to ${destination}. DO NOT use generic titles like "Beach Vibes" unless ${destination} actually has beaches. Use titles that reflect what ${destination} is known for (e.g. heritage, temples, forts, food, markets, nature, wildlife, etc.)
-- Each "morning", "afternoon", "evening" must be a descriptive sentence (2-3 sentences with specific real place names in ${destination})
-- "estimated_cost" is the total cost for that day in INR (number, not string)
-- Include REAL place names, restaurants, and attractions that actually exist in ${destination}
-- Include travel tips and eco-friendly suggestions where possible
-- Return ONLY valid JSON, no extra text or markdown`;
 
 const response = await fetch(GROQ_BASE_URL, {
   method: "POST",

@@ -37,41 +37,36 @@ export async function handleGenerateItinerary(req, res) {
     if (!destination) {
       return res.status(400).json({ error: "Destination is required" });
     }
+
     // Date validation
-if (arrivalDate && returnDate) {
-  const today = new Date();
-  today.setHours(0,0,0,0);
+    if (arrivalDate && returnDate) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
 
-  const arrival = new Date(arrivalDate);
-  const ret = new Date(returnDate);
+      const arrival = new Date(arrivalDate);
+      const ret = new Date(returnDate);
 
-  if (arrival < today) {
-    return res.status(400).json({
-      error: "Arrival date cannot be in the past"
-    });
-  }
+      if (arrival < today) {
+        return res.status(400).json({
+          error: "Arrival date cannot be in the past"
+        });
+      }
 
-  if (ret < arrival) {
-    return res.status(400).json({
-      error: "Return date must be after arrival date"
-    });
-  }
-}
+      if (ret < arrival) {
+        return res.status(400).json({
+          error: "Return date must be after arrival date"
+        });
+      }
+    }
 
-// Budget validation
-if (!budget || budget < 1000) {
-  return res.status(400).json({
-    error: "Budget must be at least ₹1000"
-  });
-}
+    // Budget validation
+    if (!budget || budget < 1000) {
+      return res.status(400).json({
+        error: "Budget must be at least ₹1000"
+      });
+    }
 
-if (budget > 10000000) {
-  return res.status(400).json({
-    error: "Budget too large"
-  });
-}
-
-    // Generate the itinerary via AI
+    // ✅ Generate itinerary FIRST
     const itinerary = await generateItinerary({
       destination,
       days: days || 3,
@@ -79,30 +74,45 @@ if (budget > 10000000) {
       budget: budget || 30000,
     });
 
-    // If userId is provided, save to Firestore
+    // ✅ Sanitize budget
+    let safeBudget = budget;
+    if (safeBudget > 100000) {
+      safeBudget = 10000;
+    }
+
+    // ✅ Save only once
     let tripId = null;
     if (userId) {
       tripId = await saveItineraryToFirestore(
         userId,
-        { destination, days, budget, preference, arrivalDate, returnDate },
+        {
+          destination,
+          days,
+          budget: safeBudget,
+          preference,
+          arrivalDate,
+          returnDate
+        },
         itinerary,
         db
       );
 
-      // Auto-generate photo challenges for this destination (async, fire-and-forget)
+      // ✅ KEEP THIS INSIDE if block
       generatePhotoChallenges(userId, destination, itinerary.days, db)
-        .catch(err => console.warn("⚠️ Challenge generation failed (non-fatal):", err.message));
+        .catch(err => console.warn("⚠️ Challenge generation failed:", err.message));
     }
 
     res.json({
       ...itinerary,
       tripId,
     });
+
   } catch (error) {
     console.error("❌ Itinerary generation error:", error);
     res.status(500).json({ error: "Itinerary generation failed" });
   }
 }
+
 
 /**
  * POST /regenerate-itinerary
